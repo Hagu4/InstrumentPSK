@@ -1,0 +1,687 @@
+{% extends "app/layout.html" %}
+
+{% block content %}
+{% csrf_token %}
+<style>
+    :root {
+        --manager-bg: #F1F5F9;
+        --manager-card: #FFFFFF;
+        --manager-text: #1E293B;
+        --manager-text-muted: #64748B;
+        --manager-border: #E2E8F0;
+        --manager-accent: #FF6B00;
+        --manager-accent-light: #FFF7ED;
+        --manager-success: #10B981;
+        --manager-warning: #F59E0B;
+        --manager-danger: #EF4444;
+    }
+
+    .stock-page {
+        padding: 2rem 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, var(--manager-bg) 0%, #E2E8F0 100%);
+    }
+
+    .stock-dashboard {
+        background: var(--manager-card);
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid var(--manager-border);
+    }
+
+    .dashboard-header {
+        padding: 1.5rem 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        align-items: center;
+        border-bottom: 1px solid var(--manager-border);
+        background: linear-gradient(135deg, #FF6B00 0%, #E55A00 100%);
+    }
+
+    .dashboard-header h1 {
+        color: white;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .dashboard-header .search-bar {
+        flex-grow: 1;
+        position: relative;
+        max-width: 500px;
+    }
+
+    .dashboard-header .search-bar input {
+        width: 100%;
+        padding: 1rem 1.25rem 1rem 3rem;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.95);
+        color: var(--manager-text);
+        font-size: 1.1rem;
+        transition: all 0.3s;
+    }
+    .dashboard-header .search-bar input:focus {
+        outline: none;
+        border-color: white;
+        box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
+    }
+     .dashboard-header .search-bar::before {
+        content: '\f002';
+        font-family: 'Font Awesome 5 Free';
+        font-weight: 900;
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--manager-text-muted);
+    }
+
+    .filter-group .btn {
+        margin-right: 0.5rem;
+        border-radius: 10px;
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 0.75rem 1.25rem;
+        transition: all 0.3s;
+    }
+
+    .filter-group .btn:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    
+    .filter-group .btn.active {
+        background: white;
+        color: var(--manager-accent);
+        border-color: white;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .stock-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .stock-table th, .stock-table td {
+        padding: 1.5rem 2rem;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 1.1rem;
+    }
+
+    .stock-table thead th {
+        background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+        color: var(--manager-text-muted);
+        font-weight: 700;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--manager-border);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .stock-table tbody tr {
+        border-bottom: 1px solid var(--manager-border);
+        transition: all 0.2s;
+    }
+    .stock-table tbody tr:last-child {
+        border-bottom: none;
+    }
+    .stock-table tbody tr:hover {
+        background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+        transform: scale(1.005);
+        box-shadow: 0 4px 12px rgba(255, 107, 0, 0.1);
+    }
+
+    .stock-status {
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 90px;
+        justify-content: center;
+    }
+    .stock-red { 
+        background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); 
+        color: #DC2626;
+        border: 2px solid #FCA5A5;
+    }
+    .stock-yellow { 
+        background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); 
+        color: #D97706;
+        border: 2px solid #FCD34D;
+    }
+    .stock-green { 
+        background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); 
+        color: #059669;
+        border: 2px solid #6EE7B7;
+    }
+
+    .stock-editable {
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: 10px;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stock-editable:hover {
+        background: rgba(255, 107, 0, 0.1);
+    }
+    
+    .stock-editable:hover .edit-icon {
+        transform: scale(1.2);
+    }
+    
+    .edit-icon {
+        font-size: 0.9rem;
+        transition: transform 0.2s;
+    }
+    
+    .stock-editable input {
+        width: 80px;
+        text-align: center;
+        border: 2px solid var(--manager-accent);
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 8px;
+        color: var(--manager-text-muted);
+        transition: all 0.3s;
+        border-radius: 8px;
+    }
+    .action-btn:hover {
+        color: var(--manager-accent);
+        background: var(--manager-accent-light);
+        transform: scale(1.1);
+    }
+    
+    .action-btn.delete-btn:hover {
+        color: var(--manager-danger);
+        background: #FEE2E2;
+    }
+
+    .bulk-actions {
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        padding: 1.25rem 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        color: white;
+    }
+
+    .bulk-actions span {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: white;
+    }
+    
+    .bulk-actions .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s;
+    }
+    
+    .bulk-actions .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .btn-primary { background: var(--manager-accent); border: none; }
+    .btn-warning { background: var(--manager-warning); border: none; color: white; }
+    .btn-danger { background: var(--manager-danger); border: none; }
+
+    .toast-container {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1050;
+    }
+    .toast {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        opacity: 0;
+        transform: translateX(100px);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    .toast-success { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+    .toast-error { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); }
+    
+    .col-checkbox { width: 50px; }
+    .col-price { width: 120px; }
+    .col-actions { width: 120px; }
+    
+    /* Checkbox styling */
+    .row-checkbox, #selectAllCheckbox {
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        accent-color: var(--manager-accent);
+    }
+
+    /* Product title in table */
+    .product-title-cell {
+        max-width: 300px;
+    }
+    .product-title-cell a {
+        color: var(--manager-text);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: color 0.2s;
+    }
+    .product-title-cell a:hover {
+        color: var(--manager-accent);
+    }
+    
+    /* Responsive */
+    @media (max-width: 992px) {
+        .stock-table .col-price { display: none; }
+    }
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .dashboard-header .search-bar {
+            max-width: 100%;
+        }
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .filter-group .btn {
+            flex: 1;
+            min-width: 80px;
+        }
+        .stock-dashboard {
+            border-radius: 12px;
+        }
+    }
+</style>
+
+<div class="stock-page">
+    <div class="container">
+        <div class="stock-dashboard">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h1><i class="fas fa-warehouse" style="margin-right: 0.5rem;"></i> Управление складом</h1>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Поиск по названию товара...">
+                </div>
+                <div class="filter-group">
+                    <button type="button" class="btn active" data-filter="all">Все</button>
+                    <button type="button" class="btn" data-filter="red"><i class="fas fa-exclamation-circle"></i> Нет</button>
+                    <button type="button" class="btn" data-filter="yellow"><i class="fas fa-exclamation-triangle"></i> Мало</button>
+                    <button type="button" class="btn" data-filter="green"><i class="fas fa-check-circle"></i> В наличии</button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="stock-table">
+                    <thead>
+                        <tr>
+                            <th class="col-checkbox"><input type="checkbox" id="selectAllCheckbox"></th>
+                            <th>Артикул</th>
+                            <th>Товар</th>
+                            <th class="text-center">Остаток</th>
+                            <th class="col-price">Цена</th>
+                            <th class="col-actions">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body">
+                        {% for product in products %}
+                        <tr data-product-id="{{ product.id }}" data-name="{{ product.title|lower }}" data-sku="{{ product.sku|default:product.id|lower }}" data-quantity="{{ product.quantity }}">
+                            <td data-label="Выбрать"><input type="checkbox" class="row-checkbox"></td>
+                            <td data-label="Артикул"><span style="background: #F1F5F9; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 1rem;">{{ product.sku|default:product.id }}</span></td>
+                            <td data-label="Товар" class="product-title-cell">
+                                <a href="{% url 'product_detail' product.id %}" target="_blank">{{ product.title }}</a>
+                            </td>
+                            <td data-label="Остаток" class="text-center">
+                                <div class="stock-editable" data-product-id="{{ product.id }}">
+                                    <span class="stock-status"></span>
+                                    <span class="edit-icon"><i class="fas fa-edit"></i></span>
+                                </div>
+                            </td>
+                            <td data-label="Цена" class="col-price"><strong style="color: #FF6B00; font-size: 1.1rem;">{{ product.price|floatformat:"0" }} ₽</strong></td>
+                            <td data-label="Действия" class="col-actions">
+                                 <button class="action-btn delete-btn" title="Удалить товар"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Bulk Actions Footer -->
+            <div class="bulk-actions" id="bulkActionsFooter" style="display: none;">
+                <span id="selectedCount"><i class="fas fa-check-square"></i> Выбрано: 0</span>
+                <button class="btn btn-primary" id="bulkSetQuantityBtn"><i class="fas fa-boxes"></i> Установить остаток</button>
+                <button class="btn btn-warning" id="bulkRemoveSaleBtn"><i class="fas fa-ban"></i> Снять с продажи</button>
+                <button class="btn btn-danger" id="bulkDeleteBtn"><i class="fas fa-trash"></i> Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="toast-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const tableBody = document.getElementById('stock-table-body');
+    const rows = tableBody.querySelectorAll('tr');
+
+    // --- UTILITY FUNCTIONS ---
+    function showToast(message, type = 'success') {
+        const container = document.querySelector('.toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
+    
+    // Function to get stock status class
+    const getStatusClass = (quantity) => {
+        if (quantity <= 0) return 'stock-red';
+        if (quantity <= 10) return 'stock-yellow';
+        return 'stock-green';
+    };
+
+    // Function to update a single row's stock appearance
+    const updateRowStock = (row) => {
+        const quantity = parseInt(row.querySelector('.stock-editable').dataset.quantity, 10);
+        const stockCell = row.querySelector('.stock-status');
+        stockCell.textContent = quantity;
+        stockCell.className = `stock-status ${getStatusClass(quantity)}`;
+        row.dataset.stockLevel = getStatusClass(quantity).replace('stock-', '');
+    };
+    
+    // Initialize all rows
+    rows.forEach(row => {
+        const editableDiv = row.querySelector('.stock-editable');
+        const initialQuantity = row.dataset.quantity;
+        editableDiv.dataset.quantity = initialQuantity;
+        updateRowStock(row);
+    });
+
+    // --- INLINE EDITING ---
+    tableBody.addEventListener('dblclick', function(e) {
+        const editableDiv = e.target.closest('.stock-editable');
+        if (!editableDiv) return;
+        
+        const stockStatusSpan = editableDiv.querySelector('.stock-status');
+        if (!stockStatusSpan || editableDiv.querySelector('input')) return;
+
+        const currentQuantity = stockStatusSpan.textContent;
+        const productId = editableDiv.dataset.productId;
+        
+        stockStatusSpan.style.display = 'none';
+        
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = currentQuantity;
+        input.min = "0";
+
+        editableDiv.prepend(input);
+        input.focus();
+        input.select();
+
+        const saveChanges = () => {
+            const newQuantity = input.value;
+            if (newQuantity === currentQuantity) {
+                input.remove();
+                stockStatusSpan.style.display = 'inline-block';
+                return;
+            }
+
+            fetch("{% url 'ajax_update_stock' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ product_id: productId, quantity: newQuantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    editableDiv.dataset.quantity = data.new_quantity;
+                    updateRowStock(editableDiv.closest('tr'));
+                    showToast('Остаток обновлен.');
+                } else {
+                    showToast(`Ошибка: ${data.message}`, 'error');
+                }
+            })
+            .catch(() => showToast('Сетевая ошибка.', 'error'))
+            .finally(() => {
+                input.remove();
+                stockStatusSpan.style.display = 'inline-block';
+            });
+        };
+
+        input.addEventListener('blur', saveChanges);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveChanges();
+            } else if (e.key === 'Escape') {
+                input.remove();
+                stockStatusSpan.style.display = 'inline-block';
+            }
+        });
+    });
+
+    // --- SEARCH AND FILTER ---
+    const searchInput = document.getElementById('searchInput');
+    const filterButtons = document.querySelectorAll('.filter-group .btn');
+
+    const applyFilters = () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        const activeFilter = document.querySelector('.filter-group .btn.active').dataset.filter;
+
+        rows.forEach(row => {
+            const name = row.dataset.name;
+            const sku = row.dataset.sku;
+            const stockLevel = row.dataset.stockLevel;
+
+            const searchMatch = name.includes(searchTerm) || sku.includes(searchTerm);
+            const filterMatch = activeFilter === 'all' || stockLevel === activeFilter;
+
+            row.style.display = (searchMatch && filterMatch) ? '' : 'none';
+        });
+    };
+
+    searchInput.addEventListener('input', applyFilters);
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            applyFilters();
+        });
+    });
+
+    // --- BULK ACTIONS & CHECKBOXES ---
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const bulkActionsFooter = document.getElementById('bulkActionsFooter');
+    const selectedCountSpan = document.getElementById('selectedCount');
+
+    const updateBulkActionsFooter = () => {
+        const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+        const count = selectedCheckboxes.length;
+        
+        if (count > 0) {
+            bulkActionsFooter.style.display = 'flex';
+            selectedCountSpan.textContent = `Выбрано ${count}`;
+        } else {
+            bulkActionsFooter.style.display = 'none';
+        }
+
+        selectAllCheckbox.checked = count > 0 && count === rowCheckboxes.length;
+    };
+
+    selectAllCheckbox.addEventListener('change', (e) => {
+        rowCheckboxes.forEach(checkbox => {
+            checkbox.checked = e.target.checked;
+        });
+        updateBulkActionsFooter();
+    });
+
+    rowCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActionsFooter);
+    });
+    
+    // Keyboard shortcut for select all
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'a') {
+            e.preventDefault();
+            const allSelected = selectAllCheckbox.checked;
+            selectAllCheckbox.checked = !allSelected;
+            rowCheckboxes.forEach(checkbox => checkbox.checked = !allSelected);
+            updateBulkActionsFooter();
+        }
+    });
+
+    function getSelectedProductIds() {
+        return Array.from(document.querySelectorAll('.row-checkbox:checked'))
+            .map(cb => cb.closest('tr').dataset.productId);
+    }
+    
+    function handleBulkUpdate(action, payload = {}) {
+        const productIds = getSelectedProductIds();
+        if (productIds.length === 0) {
+            showToast('Не выбрано ни одного товара.', 'error');
+            return;
+        }
+
+        fetch("{% url 'ajax_bulk_update_stock' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+            body: JSON.stringify({ action, product_ids: productIds, ...payload })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast(data.message);
+                // Update UI based on action
+                productIds.forEach(id => {
+                    const row = tableBody.querySelector(`tr[data-product-id='${id}']`);
+                    if (!row) return;
+
+                    if (action === 'delete') {
+                        row.remove();
+                    } else if (action === 'set_quantity' || action === 'remove_from_sale') {
+                        const newQty = (action === 'set_quantity') ? data.new_quantity : 0;
+                        row.querySelector('.stock-editable').dataset.quantity = newQty;
+                        updateRowStock(row);
+                    }
+                });
+                rowCheckboxes.forEach(cb => cb.checked = false);
+                updateBulkActionsFooter();
+
+            } else {
+                showToast(`Ошибка: ${data.message}`, 'error');
+            }
+        })
+        .catch(() => showToast('Сетевая ошибка.', 'error'));
+    }
+
+    document.getElementById('bulkSetQuantityBtn').addEventListener('click', () => {
+        const quantity = prompt('Введите новый остаток для выделенных товаров:', '15');
+        if (quantity !== null && !isNaN(quantity) && quantity >= 0) {
+            handleBulkUpdate('set_quantity', { quantity: parseInt(quantity) });
+        } else if (quantity !== null) {
+            showToast('Пожалуйста, введите корректное число.', 'error');
+        }
+    });
+
+    document.getElementById('bulkRemoveSaleBtn').addEventListener('click', () => {
+        if (confirm('Вы уверены, что хотите снять с продажи (установить остаток 0) для выделенных товаров?')) {
+            handleBulkUpdate('remove_from_sale');
+        }
+    });
+    
+    document.getElementById('bulkDeleteBtn').addEventListener('click', () => {
+        if (confirm('Вы уверены, что хотите НАВСЕГДА удалить выделенные товары? Это действие необратимо.')) {
+            handleBulkUpdate('delete');
+        }
+    });
+
+    tableBody.addEventListener('click', e => {
+        if(e.target.classList.contains('delete-btn')){
+            const row = e.target.closest('tr');
+            const productId = row.dataset.productId;
+             if (confirm(`Вы уверены, что хотите НАВСЕГДА удалить товар "${row.dataset.name}"? Это действие необратимо.`)) {
+                fetch("{% url 'ajax_bulk_update_stock' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                    body: JSON.stringify({ action: 'delete', product_ids: [productId] })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === 'success'){
+                        showToast(data.message);
+                        row.remove();
+                    } else {
+                        showToast(`Ошибка: ${data.message}`, 'error');
+                    }
+                })
+                .catch(() => showToast('Сетевая ошибка.', 'error'));
+            }
+        }
+    });
+
+
+    // Initial setup
+    applyFilters();
+});
+</script>
+{% endblock %}

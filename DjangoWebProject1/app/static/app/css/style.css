@@ -1,0 +1,198 @@
+/* Основные стили для формы */
+.feedback-form {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+    .feedback-form h2 {
+        color: #000000;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .feedback-form p {
+        color: #333333;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    /* Стили для полей ввода */
+    .feedback-form input,
+    .feedback-form textarea,
+    .feedback-form select {
+        width: 100%;
+        padding: 3px;
+        margin-bottom: 15px;
+        border: 2px solid #000000;
+        border-radius: 5px;
+        background-color: #ffffff;
+        color: #000000;
+        transition: all 0.3s ease;
+    }
+
+        .feedback-form input:focus,
+        .feedback-form textarea:focus,
+        .feedback-form select:focus {
+            border-color: #ff8c42;
+            background-color: #ffbf94;
+            outline: none;
+        }
+
+        /* Стили для чекбоксов и радиокнопок */
+        .feedback-form input[type="checkbox"],
+        .feedback-form input[type="radio"] {
+            accent-color: #ff8c42;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+            .feedback-form input[type="checkbox"]:focus,
+            .feedback-form input[type="radio"]:focus {
+                accent-color: #000000;
+            }
+
+    /* Стили для контейнеров чекбоксов и радиокнопок */
+    .feedback-form .form-group {
+        margin-bottom: 15px;
+    }
+
+        .feedback-form .form-group label {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #333;
+        }
+
+    /* Стили для кнопки */
+    .feedback-form button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #000000;
+        color: #ffffff;
+        border: 2px solid #000000;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+        .feedback-form button:hover {
+            background-color: #ff8c42;
+            color: #000000;
+            border-color: #ff8c42;
+        }
+
+    /* Стили для списка */
+    .feedback-form ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+        .feedback-form ul li {
+            margin-bottom: 10px;
+        }
+    /* Стили для контейнеров чекбоксов и радиокнопок */
+    .feedback-form p {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+        .feedback-form p label {
+            font-size: 16px;
+            color: #333;
+        }
+
+    /* Стили для чекбоксов и радиокнопок */
+    .feedback-form input[type="checkbox"],
+    .feedback-form input[type="radio"] {
+        margin: 0;
+        width: 16px;
+        height: 16px;
+        accent-color: #ff8c42;
+        /* Стили для выбранных чекбоксов и радиокнопок */
+        .feedback-form input[type="checkbox"]:checked, .feedback-form input[type="radio"]:checked accent-color: #ff8c42;
+    }
+
+        /* Стили для фокуса */
+        .feedback-form input[type="checkbox"]:focus,
+        .feedback-form input[type="radio"]:focus {
+            accent-color: #000000;
+        }
+
+/* Стили для контейнера благодарности */
+.thanks-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+    .thanks-container h2 {
+        color: #000000;
+        margin-bottom: 20px;
+    }
+
+    .thanks-container p {
+        color: #333333;
+        margin-bottom: 20px;
+    }
+
+/* Стили для списка данных */
+.data-list {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.data-item {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #333;
+}
+
+.data-label {
+    font-weight: bold;
+    margin-right: 10px;
+    color: #000000;
+}
+
+.data-value {
+    flex-grow: 1;
+    text-align: right;
+}
+
+/* Стили для кнопки */
+.thanks-container .btn-primary {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #000000;
+    color: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .thanks-container .btn-primary:hover {
+        background-color: #ff8c42;
+        color: #000000;
+        border-color: #ff8c42;
+    }
+
+.navbar-brand {
+    color: firebrick;
+}

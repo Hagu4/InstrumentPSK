@@ -1,0 +1,87 @@
+{% extends "app/profile_base.html" %}
+
+{% block profile_content %}
+<h1>Личные данные</h1>
+
+<form method="post" class="profile-form">
+    {% csrf_token %}
+    <div class="form-grid">
+        <div class="form-field">
+            <label for="{{ form.first_name.id_for_label }}">Имя</label>
+            {{ form.first_name }}
+        </div>
+        <div class="form-field">
+            <label for="{{ form.last_name.id_for_label }}">Фамилия</label>
+            {{ form.last_name }}
+        </div>
+        <div class="form-field">
+            <label for="{{ form.phone_number.id_for_label }}">Телефон</label>
+            {{ form.phone_number }}
+        </div>
+        <div class="form-field">
+            <label for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+        </div>
+        <div class="form-field form-field-full-width">
+            <label for="id_address">Адрес доставки</label>
+            <textarea name="address" id="id_address" placeholder="Город, улица, дом, квартира"></textarea>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn-save">Сохранить изменения</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Находим инпут для номера телефона по его ID, который Django генерирует как "id_имя_поля"
+    const phoneInput = document.getElementById('{{ form.phone_number.id_for_label }}');
+    if (!phoneInput) return;
+
+    const prefixNumber = (str) => {
+        if (str === "7") return "7 (";
+        if (str === "8") return "8 (";
+        if (str === "9") return "7 (9";
+        return "7 (";
+    };
+
+    const formatPhoneNumber = (e) => {
+        const value = e.target.value.replace(/\D+/g, "");
+        const numberLength = 11;
+        let result = "+";
+
+        for (let i = 0; i < value.length && i < numberLength; i++) {
+            switch (i) {
+                case 0:
+                    result += prefixNumber(value[i]);
+                    continue;
+                case 4:
+                    result += ") ";
+                    break;
+                case 7:
+                    result += "-";
+                    break;
+                case 9:
+                    result += "-";
+                    break;
+                default:
+                    break;
+            }
+            result += value[i];
+        }
+        e.target.value = result;
+    };
+    
+    // Применяем маску при вводе
+    phoneInput.addEventListener('input', formatPhoneNumber);
+    
+    // Также применяем маску сразу при загрузке, если в поле уже есть значение
+    if(phoneInput.value) {
+        formatPhoneNumber({target: phoneInput});
+    }
+});
+</script>
+{% endblock %}

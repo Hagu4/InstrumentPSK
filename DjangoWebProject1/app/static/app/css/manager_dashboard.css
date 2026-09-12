@@ -1,0 +1,184 @@
+/* Manager Dashboard Styles */
+
+:root {
+    --status-new: #dc3545;
+    --status-diagnosing: #ffc107;
+    --status-in-progress: #007bff;
+    --status-ready: #28a745;
+    --status-completed: #6c757d;
+}
+
+.manager-dashboard-container {
+    margin-top: 30px;
+}
+
+/* --- Stat Cards --- */
+.stat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+    text-align: center;
+    border-left: 5px solid var(--primary-color);
+}
+
+.stat-card h5 {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.stat-card .stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #343a40;
+}
+
+/* --- Data Table --- */
+.dashboard-table-container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+}
+
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: top;
+}
+
+.dashboard-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.dashboard-table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.dashboard-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+.dashboard-table tbody tr:nth-child(even):hover {
+    background-color: #e9ecef;
+}
+
+.dashboard-table .problem-cell {
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.dashboard-table .problem-cell.expanded {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    background-color: #f8f9fa;
+    overflow-wrap: break-word;
+}
+
+.dashboard-table .client-phone a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+.dashboard-table .client-phone a:hover {
+    text-decoration: underline;
+}
+
+/* Status Select Dropdown */
+.status-select {
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    font-weight: 500;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-position: right 10px center;
+    background-repeat: no-repeat;
+    background-size: 10px;
+    cursor: pointer;
+}
+
+/* Color coding the select box itself */
+.status-select[data-status="NEW"] {
+    background-color: var(--status-new);
+    color: #fff;
+    border-color: var(--status-new);
+}
+.status-select[data-status="DIAGNOSING"] {
+    background-color: var(--status-diagnosing);
+    color: #212529;
+    border-color: var(--status-diagnosing);
+}
+.status-select[data-status="IN_PROGRESS"] {
+    background-color: var(--status-in-progress);
+    color: #fff;
+    border-color: var(--status-in-progress);
+}
+.status-select[data-status="READY"] {
+    background-color: var(--status-ready);
+    color: #fff;
+    border-color: var(--status-ready);
+}
+.status-select[data-status="COMPLETED"] {
+    background-color: var(--status-completed);
+    color: #fff;
+    border-color: var(--status-completed);
+}
+
+/* Action Buttons */
+.actions-cell {
+    white-space: nowrap;
+}
+.action-btn {
+    display: inline-block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.4rem;
+    padding: 8px;
+    margin: 0 5px;
+    transition: color 0.2s, transform 0.2s;
+    vertical-align: middle;
+}
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+.view-btn {
+    color: #6c757d;
+}
+.view-btn:hover {
+    color: #5a6268;
+}
+
+.delete-btn {
+    color: #dc3545;
+}
+.delete-btn:hover {
+    color: #c82333;
+}

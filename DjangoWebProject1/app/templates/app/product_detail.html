@@ -1,0 +1,1994 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load app_filters %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    /* Animation for Quantity Input */
+    @keyframes qty-flash {
+        0% { background-color: #ffd1b3; } /* Light orange flash */
+        100% { background-color: #f5f5f5; }
+    }
+    .qty-animate {
+        animation: qty-flash 0.3s ease-out;
+    }
+
+    /* General PDP Styles */
+    .pdp-container {
+        padding: 2rem 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .pdp-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    @media (min-width: 992px) {
+        .pdp-grid {
+            grid-template-columns: 6.5fr 5.5fr; /* Wider gallery, more focus on image */
+        }
+    }
+
+    /* NEW Gallery Section Redesign */
+    .pdp-gallery {
+        display: flex;
+        gap: 15px;
+    }
+    .pdp-gallery-vertical-thumbs {
+        width: 65px; /* Even more compact */
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: none; /* Firefox: hide scrollbar */
+        flex-shrink: 0;
+        transition: scrollbar-color 0.3s;
+    }
+    .pdp-gallery-vertical-thumbs::-webkit-scrollbar { 
+        width: 0; /* Webkit: hide scrollbar by default */
+        background: transparent;
+    }
+    .pdp-gallery-vertical-thumbs:hover {
+        scrollbar-width: thin; /* Firefox: show on hover */
+    }
+    .pdp-gallery-vertical-thumbs:hover::-webkit-scrollbar {
+        width: 4px; /* Webkit: show on hover */
+    }
+    .pdp-gallery-vertical-thumbs::-webkit-scrollbar-thumb { 
+        background: #FF6B00; 
+        border-radius: 10px; 
+    }
+
+    .pdp-gallery .thumb {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        height: 65px; /* Matching width */
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        background: white;
+        flex-shrink: 0;
+        padding: 3px;
+    }
+    .pdp-gallery .thumb:hover { border-color: #FF6B00; }
+    .pdp-gallery .thumb.active { border-color: #FF6B00; box-shadow: 0 4px 10px rgba(255,107,0,0.1); }
+    .pdp-gallery .thumb img { width: 100%; height: 100%; object-fit: contain; }
+
+    .pdp-gallery .main-image-wrapper {
+        position: relative;
+        flex-grow: 1;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 500px;
+        background: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+    }
+    .pdp-gallery .main-image {
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+        transition: transform 0.3s ease;
+    }
+
+    /* Gallery Arrows */
+    .gallery-nav-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px; /* Smaller arrows */
+        height: 36px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.2s;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        color: #1e293b;
+        opacity: 0.4; /* More subtle */
+    }
+    .gallery-nav-arrow:hover { 
+        opacity: 1;
+        background: #FF6B00; 
+        color: white; 
+        border-color: #FF6B00; 
+        transform: translateY(-50%) scale(1.1); 
+    }
+    .gallery-nav-arrow.prev { left: 12px; }
+    .gallery-nav-arrow.next { right: 12px; }
+
+    @media (max-width: 991px) {
+        .pdp-gallery { flex-direction: column-reverse; }
+        .pdp-gallery-vertical-thumbs { width: 100%; flex-direction: row; height: auto; overflow-x: auto; overflow-y: hidden; }
+        .pdp-gallery .thumb { width: 90px; height: 90px; }
+        .pdp-gallery .main-image-wrapper { height: 400px; }
+    }
+
+    /* Buy Box & Info Section */
+    .pdp-info .product-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        color: #888;
+    }
+     .pdp-info .product-sku {
+        font-size: 0.85rem;
+    }
+     .pdp-info .product-brand-logo {
+        max-height: 30px;
+        max-width: 100px;
+    }
+
+    .pdp-info .product-title {
+        font-size: 2.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+    }
+
+    .pdp-info .rating-section {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .pdp-info .rating-section .stars {
+        color: #ffc107;
+    }
+    .pdp-info .rating-section a {
+        color: #555;
+        text-decoration: none;
+    }
+    
+    .pdp-info .price-section {
+        margin-bottom: 1.5rem;
+    }
+    .pdp-info .current-price {
+        font-size: 36px;
+        font-weight: bold;
+        color: #FF6B00;
+    }
+    .pdp-info .old-price {
+        font-size: 1.2rem;
+        text-decoration: line-through;
+        color: #999;
+        margin-left: 1rem;
+    }
+
+    .price-discount-badge {
+        background-color: #E74C3C; /* Red */
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-left: 1rem;
+    }
+
+    .pdp-info .key-specs {
+        margin-bottom: 1.5rem;
+        color: #000;
+    }
+    .pdp-info .key-specs ul {
+        list-style: disc;
+        padding-left: 20px;
+    }
+    .pdp-info .key-specs li {
+        margin-bottom: 0.5rem;
+    }
+
+
+    /* Main actions: Quantity + Cart Button */
+    .pdp-info .main-actions {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .pdp-info .quantity-input {
+        display: flex;
+        align-items: center;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+    }
+    .pdp-info .quantity-input button {
+        border: none;
+        background: transparent;
+        width: 35px;
+        height: 50px;
+        font-size: 1.2rem;
+        color: #555;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .pdp-info .quantity-input button:hover {
+        color: #000;
+    }
+    .pdp-info .quantity-input input {
+        width: 45px;
+        text-align: center;
+        border: none;
+        background: transparent;
+        height: 50px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        -moz-appearance: textfield;
+    }
+    .pdp-info .quantity-input input::-webkit-outer-spin-button,
+    .pdp-info .quantity-input input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .pdp-info .btn-add-to-cart {
+        flex-grow: 1;
+        background-color: #FF6B00;
+        color: white;
+        border: none;
+        padding: 15px 20px;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .pdp-info .btn-add-to-cart:hover {
+        background-color: #e65c00;
+    }
+
+    .btn-favorite-pdp-square {
+        width: 50px;
+        height: 50px;
+        flex-shrink: 0;
+        border: 1px solid #dee2e6;
+        background-color: #fff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: border-color 0.2s ease, color 0.2s ease;
+    }
+    .btn-favorite-pdp-square .fa-heart {
+        font-size: 22px;
+        color: #6c757d;
+        transition: color 0.2s ease, transform 0.2s ease;
+    }
+    .btn-favorite-pdp-square:hover {
+        border-color: #E74C3C;
+    }
+    .btn-favorite-pdp-square:hover .fa-heart {
+        color: #E74C3C;
+        transform: scale(1.1);
+    }
+    .btn-favorite-pdp-square.favorited {
+        border-color: #E74C3C;
+    }
+    .btn-favorite-pdp-square.favorited .fa-heart {
+        color: #E74C3C;
+    }
+    
+    .btn-compare-pdp {
+        width: 50px;
+        height: 50px;
+        flex-shrink: 0;
+        border: 1px solid #dee2e6;
+        background-color: #fff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-compare-pdp .fa-balance-scale {
+        font-size: 20px;
+        color: #6c757d;
+        transition: all 0.3s;
+    }
+    .btn-compare-pdp:hover {
+        border-color: #FF6B00;
+    }
+    .btn-compare-pdp:hover .fa-balance-scale {
+        color: #FF6B00;
+        transform: scale(1.1);
+    }
+    .btn-compare-pdp.in-compare {
+        border-color: #FF6B00;
+        background-color: rgba(255, 107, 0, 0.1);
+    }
+    .btn-compare-pdp.in-compare .fa-balance-scale {
+        color: #FF6B00;
+    }
+    
+    .pdp-info .trust-icons {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        gap: 1rem;
+        color: #555;
+    }
+    .pdp-info .trust-icon {
+        text-align: center;
+    }
+    .pdp-info .trust-icon i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #FF6B00;
+    }
+
+    /* Tabs Section */
+    .pdp-tabs {
+        border-top: 1px solid #ddd;
+        padding-top: 2rem;
+    }
+    .tab-headers {
+        display: flex;
+        border-bottom: 2px solid #e9e9e9;
+    }
+    .tab-header {
+        padding: 1rem 1.5rem;
+        cursor: pointer;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #666;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: color 0.2s, border-color 0.2s;
+    }
+    .tab-header.active {
+        color: #FF6B00;
+        border-bottom-color: #FF6B00;
+    }
+    .tab-content {
+        padding: 2rem 0;
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .tab-content h3 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        font-size: 1.8rem;
+    }
+    .tab-content .description-text {
+        line-height: 1.8;
+        font-size: 1.7rem !important;
+        color: #1e293b;
+        max-width: 1100px;
+        letter-spacing: 0.2px;
+    }
+    .tab-content .description-text p {
+        margin-bottom: 2rem;
+        position: relative;
+        padding: 0;
+    }
+    
+    .tab-content .description-text p strong:first-child {
+        display: block;
+        font-size: 1.9rem;
+        color: #0f172a;
+        margin-bottom: 10px;
+        font-weight: 800;
+    }
+
+    /* IMPROVED SPECS TABLE - VERTICAL TWO COLUMNS */
+    .specs-container {
+        max-width: 1200px;
+        background: transparent; /* Removed background */
+        border-radius: 0;
+        padding: 40px 0; /* Only vertical padding */
+        border: none; /* Removed border */
+        column-count: 2;
+        column-gap: 80px;
+        column-rule: 1px solid #f1f5f9;
+    }
+    .spec-group-title {
+        column-span: all;
+        font-size: 2.2rem; /* Even larger title */
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #f1f5f9;
+        padding-bottom: 15px;
+    }
+    .spec-row {
+        display: flex;
+        align-items: baseline; /* Ground everything to the text line */
+        padding: 15px 0;
+        border-bottom: none;
+        break-inside: avoid;
+    }
+    .spec-name {
+        color: #64748b;
+        font-weight: 500;
+        font-size: 1.7rem !important;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    .spec-leader {
+        flex-grow: 1;
+        border-bottom: 2px dotted #cbd5e1; /* THE DOTS */
+        margin: 0 10px;
+        height: 1.1em; /* KEY: This anchors the dots to the text baseline */
+        min-width: 20px;
+    }
+    .spec-value {
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 1.5rem !important; /* USER REQUEST */
+        text-align: right;
+        flex-shrink: 1; /* Allow wrap */
+        max-width: 65%; /* Give space for long values to wrap */
+        line-height: 1.3;
+    }
+
+    @media (max-width: 991px) {
+        .specs-container {
+            column-count: 1;
+            padding: 25px 0;
+        }
+        .spec-name { font-size: 1.5rem !important; white-space: normal; }
+        .spec-value { font-size: 1.3rem !important; max-width: 100%; }
+    }
+
+    @media (max-width: 991px) {
+        .specs-container {
+            column-count: 1;
+            padding: 25px;
+        }
+        .spec-name { font-size: 1.3rem !important; }
+    }
+
+    @media (max-width: 480px) {
+        .spec-row { flex-direction: column; gap: 4px; }
+        .spec-name { min-width: 0; font-size: 1.2rem !important; }
+        .spec-value { text-align: left; padding-left: 0; }
+    }
+    
+    /* Reviews Section - Modern Design */
+    .reviews-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid var(--theme-border);
+    }
+    
+    .reviews-header h3 {
+        margin: 0;
+        font-size: 24px;
+        color: var(--theme-text-primary);
+    }
+    
+    .reviews-filters {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .review-filter-select {
+        padding: 8px 12px;
+        border: 1px solid var(--theme-border);
+        border-radius: 8px;
+        background: var(--theme-surface);
+        color: var(--theme-text-primary);
+        font-size: 14px;
+        cursor: pointer;
+    }
+    
+    .rating-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .rating-filter span {
+        font-size: 14px;
+        color: var(--theme-text-secondary);
+    }
+    
+    .rating-filter-btn {
+        padding: 6px 12px;
+        border: 1px solid var(--theme-border);
+        border-radius: 20px;
+        background: var(--theme-surface);
+        color: var(--theme-text-secondary);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .rating-filter-btn:hover, .rating-filter-btn.active {
+        background: var(--theme-accent-primary);
+        border-color: var(--theme-accent-primary);
+        color: #fff;
+    }
+    
+    .reviews-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .review-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        animation: slideUp 0.4s ease;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .review-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+    
+    .review-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+    
+    .review-author-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .review-avatar {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--theme-accent-primary), var(--theme-accent-secondary));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 18px;
+    }
+    
+    .review-meta {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .review-author {
+        font-weight: 600;
+        color: var(--theme-text-primary);
+        font-size: 16px;
+    }
+    
+    .review-date {
+        font-size: 13px;
+        color: var(--theme-text-muted);
+    }
+    
+    .review-rating-stars {
+        display: flex;
+        gap: 3px;
+    }
+    
+    .review-rating-stars i {
+        font-size: 16px;
+    }
+    
+    .review-pros-cons {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .review-pros, .review-cons {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        max-width: 48%;
+    }
+    
+    .review-pros {
+        background: rgba(22, 163, 74, 0.1);
+        color: var(--theme-success);
+    }
+    
+    .review-cons {
+        background: rgba(220, 38, 38, 0.1);
+        color: var(--theme-danger);
+    }
+    
+    .review-pros i, .review-cons i {
+        margin-top: 2px;
+    }
+    
+    .review-text {
+        margin-bottom: 15px;
+    }
+    
+    .review-text-full {
+        color: var(--theme-text-secondary);
+        line-height: 1.7;
+        margin: 0;
+    }
+    
+    .review-images {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+    }
+    
+    .review-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    
+    .review-image:hover {
+        transform: scale(1.05);
+    }
+    
+    .review-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .review-video {
+        margin-bottom: 15px;
+    }
+    
+    .video-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: rgba(220, 53, 69, 0.1);
+        border-radius: 8px;
+        color: #dc3545;
+        text-decoration: none;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    
+    .video-link:hover {
+        background: rgba(220, 53, 69, 0.2);
+    }
+    
+    .review-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        border-top: 1px solid var(--theme-border);
+    }
+    
+    .review-helpful {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .review-helpful span {
+        font-size: 14px;
+        color: var(--theme-text-muted);
+    }
+    
+    .helpful-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border: 1px solid var(--theme-border);
+        border-radius: 20px;
+        background: var(--theme-surface);
+        color: var(--theme-text-secondary);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .helpful-btn:hover {
+        border-color: var(--theme-success);
+        color: var(--theme-success);
+    }
+    
+    .helpful-btn.not-helpful:hover {
+        border-color: var(--theme-danger);
+        color: var(--theme-danger);
+    }
+    
+    .helpful-btn.active {
+        background: var(--theme-success);
+        border-color: var(--theme-success);
+        color: #fff;
+    }
+    
+    .helpful-btn.not-helpful.active {
+        background: var(--theme-danger);
+        border-color: var(--theme-danger);
+    }
+    
+    .no-reviews {
+        text-align: center;
+        padding: 60px 20px;
+        background: var(--theme-bg-secondary);
+        border-radius: 16px;
+    }
+    
+    .no-reviews i {
+        font-size: 60px;
+        color: var(--theme-text-muted);
+        margin-bottom: 20px;
+    }
+    
+    .no-reviews p {
+        font-size: 18px;
+        color: var(--theme-text-primary);
+        margin: 0 0 8px 0;
+    }
+    
+    .no-reviews span {
+        font-size: 14px;
+        color: var(--theme-text-muted);
+    }
+    
+    .load-more-reviews {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        margin-top: 20px;
+        background: var(--theme-surface);
+        border: 2px solid var(--theme-border);
+        border-radius: 10px;
+        color: var(--theme-text-primary);
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .load-more-reviews:hover {
+        border-color: var(--theme-accent-primary);
+        color: var(--theme-accent-primary);
+    }
+
+    .review-hidden {
+        display: none;
+    }
+
+    .review-hidden.show {
+        display: block;
+        animation: fadeInUp 0.4s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Review Form Styles */
+    .review-form-container {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 2px solid var(--theme-border);
+    }
+    
+    .review-form-container h4 {
+        font-size: 22px;
+        margin-bottom: 20px;
+        color: var(--theme-text-primary);
+    }
+    
+    .review-form-container .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .review-form-container label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--theme-text-primary);
+    }
+    
+    .star-rating-interactive {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: 5px;
+    }
+    
+    .star-rating-interactive input {
+        display: none;
+    }
+    
+    .star-rating-interactive label {
+        font-size: 32px;
+        color: var(--theme-border);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .star-rating-interactive label:hover,
+    .star-rating-interactive label:hover ~ label,
+    .star-rating-interactive input:checked ~ label {
+        color: #ffd700;
+        transform: scale(1.1);
+    }
+    
+    .rating-text {
+        display: block;
+        margin-top: 8px;
+        font-size: 14px;
+        color: var(--theme-text-muted);
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    @media (max-width: 576px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .review-form-container .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 15px;
+        border: 2px solid var(--theme-border);
+        border-radius: 10px;
+        background: var(--theme-surface);
+        color: var(--theme-text-primary);
+        transition: all 0.2s;
+    }
+    
+    .review-form-container .form-control:focus {
+        border-color: var(--theme-accent-primary);
+        outline: none;
+    }
+    
+    .btn-submit-review {
+        width: 100%;
+        padding: 14px 28px;
+        background: linear-gradient(135deg, var(--theme-accent-primary), var(--theme-accent-primary-hover));
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-submit-review:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(var(--theme-accent-primary-rgb), 0.3);
+    }
+    
+    .login-prompt {
+        text-align: center;
+        padding: 40px;
+        background: var(--theme-bg-secondary);
+        border-radius: 16px;
+    }
+    
+    .login-prompt i {
+        font-size: 48px;
+        color: var(--theme-text-muted);
+        margin-bottom: 15px;
+    }
+    
+    .login-prompt p {
+        font-size: 16px;
+        color: var(--theme-text-secondary);
+        margin: 0;
+    }
+    
+    .login-prompt a {
+        color: var(--theme-accent-primary);
+        font-weight: 600;
+    }
+
+    .form-control-file {
+        width: 100%;
+        padding: 10px 0;
+        margin-top: 5px;
+    }
+
+    .form-control-file::-webkit-file-upload-button {
+        padding: 10px 20px;
+        background: var(--theme-bg-secondary);
+        border: 2px dashed var(--theme-border-color);
+        border-radius: 8px;
+        color: var(--theme-text-secondary);
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .form-control-file::-webkit-file-upload-button:hover {
+        border-color: var(--theme-accent-primary);
+        color: var(--theme-accent-primary);
+    }
+
+    /* Upsell Section */
+    .upsell-section {
+        padding: 3rem 0;
+        background-color: #f9f9f9;
+        border-top: 1px solid #eee;
+    }
+    .upsell-section h2 {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+    }
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.5rem;
+    }
+    .product-card {
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        transition: box-shadow 0.3s;
+    }
+    .product-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .product-card img {
+        max-width: 100%;
+        height: 150px;
+        object-fit: contain;
+        margin-bottom: 1rem;
+    }
+    .product-card h5 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .product-card .price { font-weight: bold; color: #333; }
+
+</style>
+
+<div class="container pdp-container" itemscope itemtype="http://schema.org/Product">
+    
+    {% if breadcrumbs %}
+    <nav aria-label="breadcrumb" style="margin-bottom: 2rem;">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'catalog' %}">Каталог</a></li>
+            {% for crumb in breadcrumbs %}
+                <li class="breadcrumb-item"><a href="{% url 'catalog_category' category_slug=crumb.slug %}">{{ crumb.name }}</a></li>
+            {% endfor %}
+            <li class="breadcrumb-item active" aria-current="page">{{ product.title|truncatewords:5 }}</li>
+        </ol>
+    </nav>
+    {% endif %}
+
+    <div class="pdp-grid">
+        <!-- Left Column: Gallery -->
+        <section class="pdp-gallery">
+            {% with images=product.images.all %}
+                {% if images|length > 1 %}
+                <div class="pdp-gallery-vertical-thumbs">
+                    {% for img in images %}
+                    <div class="thumb {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}"><img src="{{ img.image.url }}" alt="Thumbnail {{ forloop.counter }}"></div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="main-image-wrapper">
+                    {% if images|length > 1 %}
+                      <div class="gallery-nav-arrow prev"><i class="fas fa-chevron-left"></i></div>
+                      <div class="gallery-nav-arrow next"><i class="fas fa-chevron-right"></i></div>
+                    {% endif %}
+
+                    {% if images %}
+                        <img src="{{ images.first.image.url }}"
+                             alt="{{ product.title }}"
+                             class="main-image"
+                             id="main-product-image"
+                             itemprop="image">
+                    {% else %}
+                        <img src="{% static 'app/content/logo.png' %}" style="opacity: 0.5;"
+                             alt="{{ product.title }}"
+                             class="main-image"
+                             id="main-product-image"
+                             itemprop="image">
+                    {% endif %}
+                </div>
+            {% endwith %}
+        </section>
+
+        <!-- Right Column: Buy Box & Info -->
+        <section class="pdp-info">
+            <div class="product-meta">
+                <span class="product-sku" itemprop="sku" style="font-size: 1.1rem; color: #475569; margin-left: auto; cursor: pointer; padding: 6px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; transition: background 0.2s, border-color 0.2s;" onclick="copySku('{{ product.sku|default:product.id }}', this)" title="Нажмите, чтобы скопировать" onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#cbd5e1';" onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#e2e8f0';">
+                    Артикул: <strong style="color: #0f172a; font-family: monospace; font-size: 1.2rem; letter-spacing: 0.5px;">{{ product.sku|default:product.id }}</strong>
+                    <i class="far fa-copy" style="color: #94a3b8; font-size: 1rem; transition: color 0.2s;"></i>
+                </span>
+                {% if product.brand %}
+                <span itemprop="brand" itemscope itemtype="http://schema.org/Brand">
+                    <meta itemprop="name" content="{{ product.brand.name }}">
+                    {% if product.brand.image %}
+                    <a href="{{ product.brand.get_absolute_url }}">
+                        <img src="{{ product.brand.image.url }}" alt="{{ product.brand.name }}" class="product-brand-logo">
+                    </a>
+                    {% endif %}
+                </span>
+                {% endif %}
+            </div>
+
+            <h1 class="product-title" itemprop="name">{{ product.title }}</h1>
+            {% if product.brand %}
+                <p>Бренд: <a href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a></p>
+            {% endif %}
+            
+            {% if review_count > 0 %}
+            <div class="rating-section" itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating">
+                <div class="stars">
+                    {% with avg_rating_rounded=average_rating|default:0|floatformat:0 %}
+                        {% for i in "12345" %}
+                            <i class="{% if i|add:0 <= avg_rating_rounded|add:0 %}fas{% else %}far{% endif %} fa-star"></i>
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+                <a href="#tab-reviews">{{ review_count }} {% if review_count == 1 %}отзыв{% elif review_count >= 2 and review_count <= 4 %}отзыва{% else %}отзывов{% endif %}</a>
+                <meta itemprop="ratingValue" content="{{ average_rating|default:0|floatformat:1 }}">
+                <meta itemprop="reviewCount" content="{{ review_count }}">
+            </div>
+            {% endif %}
+
+            <div class="price-section" itemprop="offers" itemscope itemtype="http://schema.org/Offer">
+                <span class="current-price" itemprop="price">{{ product.price|format_price }} ₽</span>
+                <meta itemprop="priceCurrency" content="RUB">
+                {% if product.old_price and product.old_price > product.price %}
+                    <span class="old-price">{{ product.old_price|format_price }} ₽</span>
+                    {% if discount_percentage > 0 %}
+                        <span class="price-discount-badge">-{{ discount_percentage }}%</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            {% if product.quantity > 0 %}
+                <link itemprop="availability" href="http://schema.org/InStock" />
+                <p style="color: green; margin-top: -1rem; margin-bottom: 1rem;">В наличии</p>
+            {% else %}
+                <link itemprop="availability" href="http://schema.org/OutOfStock" />
+                <p style="color: #3b82f6; margin-top: -1rem; margin-bottom: 1.5rem; font-weight: 600;"><i class="fas fa-clock"></i> Доступно под заказ</p>
+            {% endif %}
+
+            <div class="key-specs">
+                <ul>
+                    {% for char in product.characteristics.all|slice:":4" %}
+                        <li><strong>{{ char.characteristic.name }}:</strong> {{ char.value }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <form method="post" action="{% url 'product_detail' product_id=product.id %}">
+                {% csrf_token %}
+                <div class="pdp-buy-wrapper" style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 25px;">
+                    <div class="main-actions" style="display: flex; align-items: stretch; gap: 15px; margin-bottom: 0;">
+                        <div class="quantity-input" style="height: 54px; margin-bottom: 0; background-color: #f1f5f9; border-radius: 10px;">
+                            <button type="button" class="btn-qty-minus" style="width: 45px; height: 100%; border: none; background: transparent; font-size: 1.2rem;">-</button>
+                            <input type="number" name="quantity" value="1" min="1" max="{{ product.quantity|default:99 }}" style="width: 50px; border: none; background: transparent; text-align: center; font-weight: 700; font-size: 1.1rem;" id="quantity-field">
+                            <button type="button" class="btn-qty-plus" style="width: 45px; height: 100%; border: none; background: transparent; font-size: 1.2rem;">+</button>
+                        </div>
+                        
+                        {% if product.quantity > 0 %}
+                        <button type="submit" name="add_to_cart" class="btn-add-to-cart" style="height: 54px; flex-grow: 1; border-radius: 10px; font-weight: 700; font-size: 1rem; border: none;">
+                            <i class="fas fa-shopping-cart"></i> В корзину
+                        </button>
+                        {% else %}
+                        <button type="submit" name="add_to_cart" class="btn-add-to-cart" style="height: 54px; flex-grow: 1; background-color: #2563EB; font-size: 1.1rem; border-radius: 10px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); border: none; color: white; font-weight: 700;" onmouseover="this.style.backgroundColor='#1d4ed8'; this.style.transform='translateY(-1px)';" onmouseout="this.style.backgroundColor='#2563EB'; this.style.transform='none';">
+                            <i class="fas fa-clock"></i> Заказать под заказ
+                        </button>
+                        {% endif %}
+
+                        <button type="button" class="btn-favorite-pdp-square {% if product.id in favorite_product_ids %}is-favorite{% endif %}" data-product-id="{{ product.id }}" title="В избранное" style="height: 54px; width: 54px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid #e2e8f0; background: white; cursor: pointer;">
+                            <i class="fa-heart {% if product.id in favorite_product_ids %}fas{% else %}far{% endif %}" style="font-size: 1.3rem;"></i>
+                        </button>
+                        <button type="button" class="btn-compare-pdp {% if product.id in comparison_product_ids %}in-compare{% endif %}" data-product-id="{{ product.id }}" title="К сравнению" style="height: 54px; width: 54px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid #e2e8f0; background: white; cursor: pointer;">
+                            <i class="fas fa-balance-scale" style="font-size: 1.3rem;"></i>
+                        </button>
+                    </div>
+
+                    {% if product.quantity <= 0 %}
+                    <div class="preorder-info-box" style="padding: 15px; background: #f0f7ff; border-radius: 12px; border: 1px solid #bfdbfe; display: flex; gap: 12px; align-items: center;">
+                        <i class="fas fa-info-circle" style="color: #3b82f6; font-size: 1.5rem;"></i>
+                        <span style="font-size: 1.5rem; color: #1e40af; line-height: 1.4; font-weight: 500;">
+                            Этого товара сейчас нет на складе, но мы доставим его специально для вас в течение <strong>3-10 рабочих дней</strong>.
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="trust-icons" style="margin-top: 2rem;">
+                <div class="trust-icon"><i class="fas fa-shield-alt"></i><div>Гарантия качества</div></div>
+                <div class="trust-icon"><i class="fas fa-store"></i><div>Самовывоз</div></div>
+                <div class="trust-icon"><i class="fas fa-tag"></i><div>Лучшая цена</div></div>
+            </div>
+
+        </section>
+    </div>
+
+    <!-- Tabs Section -->
+    <div class="pdp-tabs">
+        <div class="tab-headers">
+            <div class="tab-header active" data-tab="description">Описание</div>
+            <div class="tab-header" data-tab="specs">Характеристики</div>
+            <div class="tab-header" data-tab="reviews">Отзывы ({{ review_count|default:0 }})</div>
+            <div class="tab-header" data-tab="docs">Документация</div>
+        </div>
+        <div class="tab-content active" id="tab-description">
+            <h3 class="spec-group-title">Описание товара: {{ product.title }}</h3>
+            <div class="description-text" itemprop="description">
+                {{ product.description|linebreaks|default:"<p>Описание для этого товара пока не добавлено.</p>" }}
+            </div>
+        </div>
+        <div class="tab-content" id="tab-specs">
+            <div class="specs-container">
+                <h3 class="spec-group-title">Характеристики товара: {{ product.title }}</h3>
+                {% if product.characteristics.all %}
+                    {% for char in product.characteristics.all %}
+                    <div class="spec-row">
+                        <span class="spec-name">{{ char.characteristic.name }}</span>
+                        <span class="spec-leader"></span>
+                        <span class="spec-value">{{ char.value }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Характеристики для этого товара уточняются.</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="tab-content" id="tab-reviews">
+            <div class="reviews-header">
+                <h3>Отзывы покупателей</h3>
+                {% if reviews %}
+                <div class="reviews-filters">
+                    <select id="review-sort" class="review-filter-select">
+                        <option value="newest">Сначала новые</option>
+                        <option value="oldest">Сначала старые</option>
+                        <option value="rating-high">По рейтингу ↓</option>
+                        <option value="rating-low">По рейтингу ↑</option>
+                        <option value="helpful">По полезности</option>
+                    </select>
+                    <div class="rating-filter">
+                        <span>Показать:</span>
+                        <button class="rating-filter-btn active" data-rating="0">Все</button>
+                        <button class="rating-filter-btn" data-rating="5">5 ★</button>
+                        <button class="rating-filter-btn" data-rating="4">4 ★</button>
+                        <button class="rating-filter-btn" data-rating="3">3 ★</button>
+                        <button class="rating-filter-btn" data-rating="2">2 ★</button>
+                        <button class="rating-filter-btn" data-rating="1">1 ★</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="reviews-list" id="reviews-list">
+            {% for review in reviews %}
+                <div class="review-card {% if forloop.counter > 3 %}review-hidden{% endif %}" data-rating="{{ review.rating }}" data-date="{{ review.date|date:'U' }}" data-helpful="{{ review.helpful_count }}">
+                    <div class="review-card-header">
+                        <div class="review-author-info">
+                            <div class="review-avatar">
+                                {{ review.author.username|slice:":1"|upper }}
+                            </div>
+                            <div class="review-meta">
+                                <span class="review-author">{{ review.author.get_full_name|default:review.author.username }}</span>
+                                <span class="review-date">{{ review.date|date:"d M Y" }}</span>
+                            </div>
+                        </div>
+                        <div class="review-rating-stars">
+                            {% with rating=review.rating|default:0 %}
+                            {% for i in "12345" %}
+                            <i class="{% if forloop.counter <= rating %}fas{% else %}far{% endif %} fa-star" style="color: {% if forloop.counter <= rating %}#FCD34D{% else %}#CBD5E1{% endif %};"></i>
+                            {% endfor %}
+                            {% endwith %}
+                        </div>
+                    </div>
+
+                    {% if review.pros or review.cons %}
+                    <div class="review-pros-cons">
+                        {% if review.pros %}
+                        <div class="review-pros">
+                            <i class="fas fa-plus"></i>
+                            <span>{{ review.pros }}</span>
+                        </div>
+                        {% endif %}
+                        {% if review.cons %}
+                        <div class="review-cons">
+                            <i class="fas fa-minus"></i>
+                            <span>{{ review.cons }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="review-text">
+                        <p class="review-text-full">{{ review.text|linebreaks }}</p>
+                    </div>
+
+                    {% if review.images.all %}
+                    <div class="review-images">
+                        {% for img in review.images.all %}
+                        <a href="{{ img.image.url }}" class="review-image" data-lightbox="review-{{ review.id }}">
+                            <img src="{{ img.image.url }}" alt="Фото отзыва">
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if review.video_url %}
+                    <div class="review-video">
+                        <a href="{{ review.video_url }}" target="_blank" class="video-link">
+                            <i class="fas fa-video"></i>
+                            <span>Смотреть видео-отзыв</span>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="review-footer">
+                        <div class="review-helpful">
+                            <span>Полезный отзыв?</span>
+                            {% with user_vote=user_review_votes|get_item:review.id %}
+                            <button class="helpful-btn {% if user.is_authenticated and user_vote == 'helpful' %}active{% endif %}" data-action="helpful" data-review="{{ review.id }}" {% if not user.is_authenticated %}disabled title="Авторизуйтесь"{% endif %}>
+                                <i class="fas fa-thumbs-up"></i>
+                                <span>{{ review.helpful_count }}</span>
+                            </button>
+                            <button class="helpful-btn not-helpful {% if user.is_authenticated and user_vote == 'not_helpful' %}active{% endif %}" data-action="not_helpful" data-review="{{ review.id }}" {% if not user.is_authenticated %}disabled title="Авторизуйтесь"{% endif %}>
+                                <i class="fas fa-thumbs-down"></i>
+                                <span>{{ review.not_helpful_count }}</span>
+                            </button>
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="no-reviews">
+                    <i class="far fa-comment-dots"></i>
+                    <p>На этот товар пока нет отзывов.</p>
+                    <span>Будьте первым, кто оставит отзыв!</span>
+                </div>
+            {% endfor %}
+            </div>
+
+            {% if reviews.count > 3 %}
+            <button class="load-more-reviews" id="load-more-reviews">
+                Показать все {{ reviews.count }} отзывов
+            </button>
+            {% endif %}
+
+            <div class="review-form-container" id="review-form">
+                {% if user.is_authenticated %}
+                    <h4>Оставить отзыв</h4>
+                    <form method="post" action="{% url 'product_detail' product_id=product.id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Ваша оценка</label>
+                            <div class="star-rating-interactive" id="star-rating">
+                                {% for i in "54321" %}
+                                <input type="radio" id="stars-{{ i }}" name="rating" value="{{ i }}" required/>
+                                <label for="stars-{{ i }}" class="fas fa-star"></label>
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text" id="rating-text">Выберите оценку</span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_pros">Достоинства</label>
+                                {{ form.pros }}
+                            </div>
+                            <div class="form-group">
+                                <label for="id_cons">Недостатки</label>
+                                {{ form.cons }}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_text">Ваш отзыв</label>
+                            {{ form.text }}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_video_url">Ссылка на видео (YouTube)</label>
+                            {{ form.video_url }}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_review_images">Фотографии (до 5)</label>
+                            <input type="file" id="id_review_images" name="review_images" accept="image/*" multiple class="form-control-file">
+                        </div>
+
+                        <button type="submit" name="review_submit" class="btn-submit-review">Отправить отзыв</button>
+                    </form>
+                {% else %}
+                    <div class="login-prompt">
+                        <i class="fas fa-user-circle"></i>
+                        <p>Чтобы оставить отзыв, пожалуйста, <a href="{% url 'login' %}?next={{ request.path }}">войдите в свой аккаунт</a>.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+        <div class="tab-content" id="tab-docs">
+            <h3>Документация</h3>
+            <p>Инструкции и сертификаты для этого товара пока не загружены.</p>
+        </div>
+    </div>
+</div>
+
+<!-- AI Recommendations: Bought Together -->
+{% if bought_together %}
+<section class="upsell-section" style="background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); padding: 3rem 0; margin-top: 3rem;">
+    <div class="container">
+        <h2 style="font-size: 1.8rem; font-weight: 700; color: #1E293B; margin-bottom: 1.5rem;">
+            <i class="fas fa-robot" style="color: #FF6B00; margin-right: 0.5rem;"></i>
+            С этим товаром покупают
+        </h2>
+        <p style="color: #64748B; margin-bottom: 1.5rem;">На основе покупок других клиентов</p>
+        <div class="product-grid">
+            {% for p in bought_together %}
+            <div class="product-card" style="background: white; border-radius: 16px; overflow: hidden; border: 1px solid #E2E8F0; transition: all 0.3s;">
+                <a href="{{ p.get_absolute_url }}">
+                    {% with first_image=p.images.all.first %}
+                        {% if first_image %}
+                            <img src="{{ first_image.image.url }}" alt="{{ p.title }}" style="height: 180px; object-fit: contain; padding: 1rem;">
+                        {% else %}
+                            <img src="{% static 'app/content/logo.png' %}" style="opacity: 0.5;" alt="{{ p.title }}" style="height: 180px; object-fit: contain; padding: 1rem;">
+                        {% endif %}
+                    {% endwith %}
+                </a>
+                <div style="padding: 1rem;">
+                    <h5 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; line-height: 1.4;">
+                        <a href="{{ p.get_absolute_url }}" class="text-dark" style="text-decoration: none;">{{ p.title|truncatechars:60 }}</a>
+                    </h5>
+                    <p class="price" style="font-size: 1.25rem; font-weight: 700; color: #FF6B00;">{{ p.price|format_price }} ₽</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Upsell Sections -->
+{% if similar_products %}
+<section class="upsell-section">
+    <div class="container">
+        <h2>Похожие товары</h2>
+        <div class="product-grid">
+            {% for p in similar_products %}
+            <div class="product-card">
+                <a href="{{ p.get_absolute_url }}">
+                    {% with first_image=p.images.all.first %}
+                        {% if first_image %}
+                            <img src="{{ first_image.image.url }}" alt="{{ p.title }}">
+                        {% else %}
+                            <img src="{% static 'app/content/logo.png' %}" style="opacity: 0.5;" alt="{{ p.title }}">
+                        {% endif %}
+                    {% endwith %}
+                </a>
+                <h5><a href="{{ p.get_absolute_url }}" class="text-dark">{{ p.title }}</a></h5>
+                <p class="price">{{ p.price|format_price }} ₽</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+// --- Copy SKU function ---
+function copySku(sku, element) {
+    navigator.clipboard.writeText(sku).then(() => {
+        const icon = element.querySelector('i');
+        const originalClass = icon.className;
+        icon.className = 'fas fa-check';
+        icon.style.color = '#10B981'; // Green check
+        setTimeout(() => {
+            icon.className = originalClass;
+            icon.style.color = '#94a3b8';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Tabs functionality ---
+    const tabContainer = document.querySelector('.tab-headers');
+    if (tabContainer) {
+        tabContainer.addEventListener('click', (event) => {
+            const header = event.target.closest('.tab-header');
+            if (!header) return;
+
+            const tabName = header.dataset.tab;
+            if (!tabName) return;
+
+            tabContainer.querySelectorAll('.tab-header').forEach(h => h.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            header.classList.add('active');
+            const activeContent = document.getElementById('tab-' + tabName);
+            if (activeContent) {
+                activeContent.classList.add('active');
+            }
+            });
+            }
+
+            // --- Handle #specs anchor from Quick View ---
+            function handleSpecsAnchor() {
+            if (window.location.hash === '#specs') {
+            const specsTabHeader = document.querySelector('.tab-header[data-tab="specs"]');
+            if (specsTabHeader) {
+                // Small delay to ensure everything is loaded
+                setTimeout(() => {
+                    specsTabHeader.click();
+                    const specsContainer = document.querySelector('.pdp-tabs');
+                    if (specsContainer) {
+                        specsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
+            }
+            }
+            }
+
+            // Run on page load
+            handleSpecsAnchor();
+            // Also run if hash changes without page reload
+            window.addEventListener('hashchange', handleSpecsAnchor);
+    
+    // --- Quantity Counter ---
+    const qtyInputContainer = document.querySelector('.quantity-input');
+    if (qtyInputContainer) {
+        const qtyInput = qtyInputContainer.querySelector('#quantity-field');
+        const btnPlus = qtyInputContainer.querySelector('.btn-qty-plus');
+        const btnMinus = qtyInputContainer.querySelector('.btn-qty-minus');
+
+        const animateQty = () => {
+            qtyInputContainer.classList.add('qty-animate');
+            setTimeout(() => {
+                qtyInputContainer.classList.remove('qty-animate');
+            }, 300);
+        };
+
+        btnPlus.addEventListener('click', () => {
+            let currentValue = parseInt(qtyInput.value, 10);
+            const maxValue = parseInt(qtyInput.max, 10);
+            if (currentValue < maxValue) {
+                qtyInput.value = currentValue + 1;
+                animateQty();
+            }
+        });
+
+        btnMinus.addEventListener('click', () => {
+            let currentValue = parseInt(qtyInput.value, 10);
+            if (currentValue > 1) {
+                qtyInput.value = currentValue - 1;
+                animateQty();
+            }
+        });
+    }
+    
+    // --- Smooth scroll to reviews tab ---
+    const reviewsLink = document.querySelector('.rating-section a');
+    if (reviewsLink) {
+        reviewsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            const reviewsTabHeader = document.querySelector('.tab-header[data-tab="reviews"]');
+            if (reviewsTabHeader) {
+                reviewsTabHeader.click();
+                setTimeout(() => {
+                    const reviewsTabContent = document.getElementById('tab-reviews');
+                    reviewsTabContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+            }
+        });
+    }
+
+    // --- Gallery functionality ---
+    const mainImgEl = document.getElementById('main-product-image');
+    const thumbEls = document.querySelectorAll('.pdp-gallery .thumb');
+    const prevBtn = document.querySelector('.gallery-nav-arrow.prev');
+    const nextBtn = document.querySelector('.gallery-nav-arrow.next');
+    let currentThumbIdx = 0;
+
+    function goToImage(index) {
+        if (thumbEls.length === 0) return;
+        
+        if (index < 0) index = thumbEls.length - 1;
+        if (index >= thumbEls.length) index = 0;
+        
+        currentThumbIdx = index;
+        const targetThumb = thumbEls[currentThumbIdx];
+        const thumbImg = targetThumb.querySelector('img');
+        
+        if (thumbImg && mainImgEl) {
+            mainImgEl.src = thumbImg.src;
+            thumbEls.forEach(t => t.classList.remove('active'));
+            targetThumb.classList.add('active');
+            
+            // Scroll thumbnail list to show active thumb
+            targetThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    if (thumbEls.length > 0) {
+        thumbEls.forEach((thumb, idx) => {
+            thumb.addEventListener('click', () => goToImage(idx));
+        });
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                goToImage(currentThumbIdx - 1);
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                goToImage(currentThumbIdx + 1);
+            });
+        }
+    }
+    
+    // --- Favorite button AJAX toggle ---
+    const favButton = document.querySelector('.btn-favorite-pdp-square');
+    if (favButton) {
+        favButton.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            if (!productId) return;
+            
+            const url = `/product/${productId}/toggle_favorite/`;
+            const csrftoken = getCookie('csrftoken');
+            const icon = this.querySelector('.fa-heart');
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if(response.status === 403 || response.status === 401) {
+                        window.location.href = '{% url 'login' %}?next=' + window.location.pathname;
+                    }
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                this.classList.toggle('is-favorite', data.is_favorited);
+                this.classList.toggle('favorited', data.is_favorited);
+                icon.classList.toggle('fas', data.is_favorited);
+                icon.classList.toggle('far', !data.is_favorited);
+            })
+            .catch(error => console.error('Error toggling favorite:', error));
+        });
+    }
+
+    // --- Compare button AJAX toggle ---
+    const compareButton = document.querySelector('.btn-compare-pdp');
+    if (compareButton) {
+        compareButton.addEventListener('click', function() {
+            const productId = this.dataset.productId;
+            if (!productId) return;
+            
+            const csrftoken = getCookie('csrftoken');
+            
+            fetch('/ajax/compare/toggle/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ product_id: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.classList.toggle('in-compare', data.is_in_comparison);
+                    if (data.is_in_comparison) {
+                        this.style.backgroundColor = 'rgba(255, 107, 0, 0.1)';
+                        showToast('Товар добавлен к сравнению!', 'success');
+                    } else {
+                        this.style.backgroundColor = '';
+                        showToast('Товар удален из сравнения', 'info');
+                    }
+                    updateComparisonBar();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => console.error('Error toggling compare:', error));
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // --- Inline Zoom-on-Hover ---
+    const imageWrapper = document.querySelector('.main-image-wrapper');
+    if (imageWrapper) {
+        const image = imageWrapper.querySelector('.main-image');
+        
+        imageWrapper.addEventListener('mousemove', function(e) {
+            // FIX: If mouse is over arrows, don't zoom
+            if (e.target.closest('.gallery-nav-arrow')) {
+                image.style.transform = 'scale(1)';
+                image.style.transformOrigin = 'center center';
+                return;
+            }
+
+            const rect = imageWrapper.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width * 100;
+            const y = (e.clientY - rect.top) / rect.height * 100;
+
+            image.style.transformOrigin = `${x}% ${y}%`;
+            image.style.transform = 'scale(2.5)';
+        });
+
+        imageWrapper.addEventListener('mouseleave', function() {
+            image.style.transform = 'scale(1)';
+            image.style.transformOrigin = 'center center';
+        });
+        
+        // Also update the zoom when a new thumbnail is clicked
+        const thumbnails = document.querySelectorAll('.thumb');
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                // Give the main image a moment to update its src
+                setTimeout(() => {
+                    image.style.transform = 'scale(1)';
+                    image.style.transformOrigin = 'center center';
+                }, 50);
+            });
+        });
+    }
+    
+    // --- Star Rating Interactive ---
+    const starRating = document.querySelector('.star-rating-interactive');
+    const ratingText = document.getElementById('rating-text');
+    if (starRating) {
+        const labels = starRating.querySelectorAll('label');
+        const ratingTexts = {
+            '1': 'Ужасно',
+            '2': 'Плохо',
+            '3': 'Нормально',
+            '4': 'Хорошо',
+            '5': 'Отлично!'
+        };
+        
+        labels.forEach(label => {
+            label.addEventListener('mouseenter', function() {
+                const value = this.getAttribute('for').split('-')[1];
+                if (ratingText) {
+                    ratingText.textContent = ratingTexts[value] || 'Выберите оценку';
+                }
+            });
+        });
+        
+        starRating.addEventListener('mouseleave', function() {
+            const checked = starRating.querySelector('input:checked');
+            if (ratingText) {
+                if (checked) {
+                    ratingText.textContent = ratingTexts[checked.value] || 'Выбрано';
+                } else {
+                    ratingText.textContent = 'Выберите оценку';
+                }
+            }
+        });
+    }
+    
+    // --- Review Sorting & Filtering ---
+    const reviewSort = document.getElementById('review-sort');
+    const ratingFilterBtns = document.querySelectorAll('.rating-filter-btn');
+    const reviewsList = document.getElementById('reviews-list');
+    const loadMoreBtn = document.getElementById('load-more-reviews');
+    
+    if (reviewsList) {
+        const reviewCards = Array.from(reviewsList.querySelectorAll('.review-card'));
+        
+        function filterAndSortReviews() {
+            const sortValue = reviewSort ? reviewSort.value : 'newest';
+            const activeFilter = document.querySelector('.rating-filter-btn.active');
+            const filterRating = activeFilter ? parseInt(activeFilter.dataset.rating) : 0;
+            
+            let filtered = reviewCards.filter(card => {
+                if (filterRating === 0) return true;
+                return parseInt(card.dataset.rating) === filterRating;
+            });
+            
+            filtered.sort((a, b) => {
+                switch(sortValue) {
+                    case 'oldest':
+                        return parseInt(a.dataset.date) - parseInt(b.dataset.date);
+                    case 'rating-high':
+                        return parseInt(b.dataset.rating) - parseInt(a.dataset.rating);
+                    case 'rating-low':
+                        return parseInt(a.dataset.rating) - parseInt(b.dataset.rating);
+                    case 'helpful':
+                        return parseInt(b.dataset.helpful) - parseInt(a.dataset.helpful);
+                    default:
+                        return parseInt(b.dataset.date) - parseInt(a.dataset.date);
+                }
+            });
+            
+            // First, remove all cards from the list
+            reviewCards.forEach(card => {
+                if (card.classList.contains('review-hidden')) {
+                    card.classList.remove('show');
+                } else {
+                    card.remove();
+                }
+            });
+            
+            // Re-add visible cards first (first 3)
+            filtered.forEach(card => reviewsList.appendChild(card));
+            
+            // Hide cards after the first 3
+            const allCards = reviewsList.querySelectorAll('.review-card');
+            allCards.forEach((card, index) => {
+                if (index >= 3) {
+                    card.classList.add('review-hidden');
+                    card.classList.remove('show');
+                } else {
+                    card.classList.remove('review-hidden');
+                    card.classList.add('show');
+                }
+            });
+            
+            // Show/hide the "show more" button
+            if (loadMoreBtn) {
+                if (filtered.length > 3) {
+                    loadMoreBtn.style.display = 'block';
+                    loadMoreBtn.textContent = 'Показать все ' + filtered.length + ' отзывов';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                }
+            }
+        }
+        
+        if (reviewSort) {
+            reviewSort.addEventListener('change', filterAndSortReviews);
+        }
+        
+        ratingFilterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                ratingFilterBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                filterAndSortReviews();
+            });
+        });
+    }
+    
+    // --- Helpful Votes ---
+    document.querySelectorAll('.helpful-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.dataset.action;
+            const reviewId = this.dataset.review;
+            const card = this.closest('.review-card');
+            const helpfulCounter = card.querySelector('[data-action="helpful"] span');
+            const notHelpfulCounter = card.querySelector('[data-action="not_helpful"] span');
+            
+            fetch('/ajax/review/vote/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    review_id: reviewId,
+                    action: action
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    helpfulCounter.textContent = data.helpful_count;
+                    notHelpfulCounter.textContent = data.not_helpful_count;
+                    
+                    if (action === 'helpful') {
+                        card.querySelectorAll('.helpful-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                    } else {
+                        card.querySelectorAll('.helpful-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                }
+            })
+            .catch(error => console.error('Ошибка:', error));
+        });
+    });
+
+    // --- Show More Reviews ---
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', function() {
+            const hiddenReviews = document.querySelectorAll('.review-hidden');
+            hiddenReviews.forEach((review, index) => {
+                setTimeout(() => {
+                    review.classList.add('show');
+                }, index * 100);
+            });
+            this.style.display = 'none';
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container';
+            container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;';
+            document.body.appendChild(container);
+        }
+        
+        const toast = document.createElement('div');
+        const colors = {
+            success: '#10B981',
+            error: '#EF4444',
+            info: '#3B82F6',
+            warning: '#F59E0B'
+        };
+        
+        toast.style.cssText = `
+            background: white;
+            color: #1E293B;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideInToast 0.3s ease;
+            border-left: 4px solid ${colors[type] || colors.info};
+        `;
+        
+        toast.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}" 
+               style="color: ${colors[type] || colors.info};"></i>
+            <span>${message}</span>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutToast 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideInToast {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutToast {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+{% endblock %}

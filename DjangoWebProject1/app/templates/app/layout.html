@@ -1,0 +1,864 @@
+{% load static %}
+{% load auth_extras %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="description" content="InstrumentPSK — профессиональный бензо- и электроинструмент в Пскове. Официальный дилер Makita, Bosch, DeWalt. Удобный самовывоз, гарантия и сервис.">
+    <meta name="keywords" content="инструмент псков, купить бензопилу, электроинструмент, макита псков, ремонт инструмента">
+    <title>{{ title }} - InstrumentPSK</title>
+
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript" >
+       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+       m[i].l=1*new Date();
+       for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+       k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+       ym(110371857, "init", {
+            clickmap:true,
+            trackLinks:true,
+            accurateTrackBounce:true,
+            webvisor:true
+       });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/110371857" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+    <link rel="icon" type="image/png" href="{% static 'app/content/favicon.png' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'app/vendor/fontawesome-free/css/all.min.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/content/bootstrap.min.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/content/site.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/theme.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/styles.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/hero-section.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/categories.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/profile.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/industrial-theme.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/filter-sidebar.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/product_universal.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/_product_card.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/favorites.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/header-contacts.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/live_search.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/quick-view.css' %}?v=25" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/custom_quick_view.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/scroll-progress.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/new_header.css' %}?v=20" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/_toast.css' %}?v=20" /> {# Added for toast notifications #}
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.27.3/ui/trumbowyg.min.css">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="{% static 'app/manifest.json' %}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="InstrumentPSK">
+    <link rel="apple-touch-icon" href="{% static 'app/images/pwa/icon-192x192.png' %}">
+    <meta name="theme-color" content="#FF6B00">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/custom_overrides.css' %}" />
+    <script src="{% static 'app/scripts/modernizr-2.6.2.js' %}"></script>
+    {% block styles %}{% endblock %}
+    <style>
+        html, body {
+            overflow-x: hidden !important;
+            scroll-behavior: smooth;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--theme-bg);
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* Гарантированные мобильные стили для шапки (Обход кэша) */
+        .hamburger-menu { display: none; }
+        @media (max-width: 768px) {
+            .search-container {
+                min-width: 0 !important;
+                max-width: 100% !important;
+            }
+            .hamburger-menu {
+                display: block !important;
+                background: none;
+                border: none;
+                font-size: 24px;
+                color: var(--header-text);
+                cursor: pointer;
+            }
+            .new-header .main-nav {
+                display: none !important;
+                position: absolute !important;
+                top: 100% !important;
+                left: 0 !important;
+                width: 100% !important;
+                background-color: var(--header-bg) !important;
+                flex-direction: column !important;
+                padding: 16px !important;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+                z-index: 1000 !important;
+            }
+            .new-header .main-nav.active {
+                display: flex !important;
+            }
+            .new-header .nav-link {
+                width: 100% !important;
+                padding: 12px 8px !important;
+                border-bottom: 1px solid var(--theme-border) !important;
+                white-space: normal !important;
+            }
+            .new-header {
+                padding: 12px 16px !important;
+                flex-wrap: nowrap !important;
+                justify-content: space-between !important;
+            }
+            
+            .new-header .header-actions {
+                margin-left: 0 !important;
+            }
+            
+            .new-header .icon-group {
+                display: flex !important;
+                gap: 20px !important;
+                align-items: center !important;
+            }
+
+            .new-header .search-container,
+            .new-header .phone-number, 
+            .theme-toggle-btn {
+                display: none !important;
+            }
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            padding-top: 70px;
+            background-color: var(--theme-bg) !important;
+        }
+        .body-content {
+            flex: 1 0 auto;
+            background-color: var(--theme-bg);
+        }
+        .body-content > .container {
+            max-width: 1600px;
+        }
+        .footer {
+            flex-shrink: 0;
+        }
+
+        /* Global Comparison Bar */
+        .global-comparison-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+            padding: 0.75rem 2rem;
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 9999;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .global-comparison-bar.visible {
+            transform: translateY(0);
+        }
+
+        .comparison-bar-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 1.5rem;
+        }
+
+        .comparison-bar-icon {
+            width: 48px;
+            height: 48px;
+            background: #FF6B00;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .global-comparison-bar.visible .comparison-bar-icon {
+            animation: comparisonBounce 0.6s ease-out 0.3s;
+        }
+
+        @keyframes comparisonBounce {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes comparisonSlideIn {
+            0% { opacity: 0; transform: translateX(-20px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        .global-comparison-bar.visible .comparison-bar-info,
+        .global-comparison-bar.visible .comparison-bar-actions {
+            animation: comparisonSlideIn 0.4s ease-out 0.2s both;
+        }
+
+        .comparison-bar-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .comparison-bar-title {
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .comparison-bar-count {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+        }
+
+        .comparison-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .comparison-bar-btn {
+            padding: 0.65rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+
+        .comparison-bar-btn.primary {
+            background: #FF6B00;
+            color: white;
+        }
+
+        .comparison-bar-btn.primary:hover {
+            background: #E55A00;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 107, 0, 0.4);
+            color: white;
+        }
+
+        .comparison-bar-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.65rem 0.9rem;
+        }
+
+        .comparison-bar-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .comparison-bar-content {
+                flex-wrap: wrap;
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .comparison-bar-info {
+                width: 100%;
+                order: 2;
+                text-align: center;
+            }
+            
+            .comparison-bar-icon {
+                order: 1;
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            
+            .comparison-bar-actions {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="back-to-top" id="backToTop">
+    <div class="back-to-top-inner">
+        <svg class="back-to-top-svg" viewBox="0 0 36 36">
+            <circle class="back-to-top-circle-bg" cx="18" cy="18" r="16"/>
+            <circle class="back-to-top-circle" cx="18" cy="18" r="16" stroke-dasharray="100" stroke-dashoffset="100"/>
+        </svg>
+        <i class="fas fa-arrow-up"></i>
+    </div>
+</div>
+    <header class="new-header">
+        <div class="container d-flex justify-content-between align-items-center py-2">
+            <!-- Logo -->
+            <a href="/" class="logo-placeholder">
+                <img src="{% static 'app/content/logo.png' %}" alt="InstrumentPSK" />
+            </a>
+
+            <!-- Navigation -->
+            <nav class="main-nav">
+                <a href="{% url 'catalog' %}" class="nav-link catalog-link">
+                    <svg width="24" height="24" viewBox="0 0 24 24" stroke="#334155"><path d="M3 12h18M3 6h18M3 18h18" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span>Каталог</span>
+                </a>
+                <a href="{% url 'about' %}" class="nav-link">О нас</a> {# Перемещено #}
+                <a href="{% url 'contact' %}" class="nav-link">Контакты</a> {# Перемещено #}
+                <div class="dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" id="moreDropdown" aria-haspopup="true" aria-expanded="false">
+                        Ещё
+                        <svg width="16" height="16" viewBox="0 0 24 24" stroke="#334155"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="moreDropdown">
+                        <a class="dropdown-item" href="{% url 'news' %}">Новости</a>
+                        <a class="dropdown-item" href="{% url 'useful_resources' %}">Полезные ресурсы</a>
+                        <a class="dropdown-item" href="{% url 'feedback' %}">Обратная связь</a>
+                        <a class="dropdown-item" href="{% url 'video' %}">Видео</a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Search Bar -->
+            <form action="{% url 'catalog' %}" method="get" class="search-container" data-search-url="{% url 'live_search' %}">
+                <input type="text" name="q" id="search-input" placeholder="Поиск по товарам..." autocomplete="off">
+                <div class="spinner" style="display: none;"></div>
+                <button type="submit" class="search-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" stroke="white"><path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke-linecap="round" stroke-linejoin="round"></path><path d="M21 21L16.65 16.65" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </button>
+                <div id="search-results" class="search-results"></div>
+            </form>
+
+            <!-- Header Actions -->
+            <div class="header-actions">
+                <a href="tel:88000000000" class="phone-number">8 800 000-00-00</a>
+                <div class="icon-group">
+                    <!-- Hamburger Menu for Mobile -->
+                    <button class="hamburger-menu" aria-label="Открыть меню">
+                        <i class="fas fa-bars" style="pointer-events: none;"></i>
+                    </button>
+
+                    <a href="{% url 'cart' %}" class="action-icon cart-icon-container">
+                        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="9" cy="21" r="1"></circle>
+                            <circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                        {% if cart_item_count > 0 %}
+                            <span id="cart-badge" class="cart-badge">{{ cart_item_count }}</span>
+                        {% else %}
+                            <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
+                        {% endif %}
+                    </a>
+
+                    {% if user.is_authenticated %}
+                        <div class="profile-dropdown-container">
+                            <button id="profile-dropdown-btn" class="action-icon profile-toggle-btn d-flex align-items-center">
+                                <i class="fas fa-user-circle fa-lg"></i> {# Новая иконка профиля #}
+                                <i class="fas fa-chevron-down dropdown-arrow"></i>
+                            </button>
+                            <div id="profile-dropdown-menu" class="profile-dropdown-menu">
+                                <div class="dropdown-section"> {# Блок для общих пользовательских пунктов #}
+                                    <a href="{% url 'profile' %}" class="dropdown-item"><i class="fas fa-user"></i> Профиль</a>
+                                    <a href="{% url 'my_orders' %}" class="dropdown-item"><i class="fas fa-box"></i> Мои заказы</a>
+                                    <a href="{% url 'favorites' %}" class="dropdown-item"><i class="fas fa-heart"></i> Избранное</a> {# Добавлю пункт Избранное #}
+                                </div>
+
+                                {% is_manager as manager %}
+                                {% if manager or user.is_superuser %}
+                                <div class="dropdown-section manager-section"> {# Блок для менеджеров/админов #}
+                                    <div class="dropdown-section-title">Управление</div>
+                                    <a href="{% url 'manager_analytics' %}" class="dropdown-item"><i class="fas fa-chart-line"></i> Аналитика</a>
+                                    <a href="{% url 'manager_orders' %}" class="dropdown-item"><i class="fas fa-clipboard-list"></i> Заказами</a>
+                                    <a href="{% url 'manager_stock' %}" class="dropdown-item"><i class="fas fa-warehouse"></i> Складом</a>
+                                </div>
+                                {% endif %}
+
+                                {% if user.is_superuser %}
+                                <div class="dropdown-section admin-section"> {# Блок для суперпользователей #}
+                                    <div class="dropdown-section-title">Администрирование</div>
+                                    <a href="{% url 'add_product' %}" class="dropdown-item"><i class="fas fa-plus-circle"></i> Добавить товар</a>
+                                    <a href="/management-psk-zone/" class="dropdown-item"><i class="fas fa-user-shield"></i> Панель администратора</a>
+                                </div>
+                                {% endif %}
+
+                                <div class="dropdown-section logout-section"> {# Блок для выхода #}
+                                    <form id="logoutForm" action="{% url 'logout' %}" method="post" class="dropdown-item">
+                                        {% csrf_token %}
+                                        <button type="submit" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="action-icon profile-link">
+                            <svg viewBox="0 0 24 24" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+    {% block hero_section %}{% endblock hero_section %}
+    {% block full_width_content %}{% endblock %}
+    <div class="container body-content">
+        {% block content %}{% endblock %}
+        <hr />
+    </div> <!-- This closes <div class="container body-content"> -->
+    
+    <!-- Floating Comparison Bar -->
+    <div class="global-comparison-bar" id="globalComparisonBar">
+        <div class="comparison-bar-content">
+            <div class="comparison-bar-icon">
+                <i class="fas fa-balance-scale"></i>
+            </div>
+            <div class="comparison-bar-info">
+                <span class="comparison-bar-title">Сравнение товаров</span>
+                <span class="comparison-bar-count" id="globalComparisonCount">0 товаров</span>
+            </div>
+            <div class="comparison-bar-actions">
+                <a href="{% url 'comparison' %}" class="comparison-bar-btn primary">
+                    <i class="fas fa-list"></i> Сравнить
+                </a>
+                <button class="comparison-bar-btn secondary" onclick="clearGlobalComparison()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container" class="toast-container"></div> {# Toast container #}
+    <script>
+        window.loginUrl = "{% url 'login' %}";
+    </script>
+    <footer class="site-footer">
+        <div class="container">
+            <!-- Row 1: Logo + Contacts -->
+            <div class="footer-row footer-top-info">
+                <a href="{% url 'home' %}" class="footer-logo">
+                    <img src="{% static 'app/content/logo.png' %}" alt="InstrumentPSK Лого" style="height: 60px; width: auto;">
+                </a>
+                <div class="footer-contacts">
+                    <a href="tel:88121234567" class="contact-item"><i class="fas fa-phone-alt"></i> 8 (812) 123-45-67</a>
+                    <div class="contact-item"><i class="fas fa-clock"></i> Пн-Пт 9:00-18:00, Сб 10:00-16:00</div>
+                    <div class="contact-item"><i class="fas fa-map-marker-alt"></i> Псков, ул. Звездная, д.3</div>
+                    <a href="mailto:info@instrumentpsk.ru" class="contact-item"><i class="fas fa-envelope"></i> benzoservice@gmail.com</a>
+                </div>
+            </div>
+
+            <!-- Row 2: Navigation Links -->
+            <div class="footer-row footer-links">
+                <div class="footer-column">
+                    <h6>Каталог</h6>
+                    {% for category in all_categories_for_menu|slice:":4" %}
+                    <a href="{{ category.get_absolute_url }}">{{ category.name }}</a>
+                    {% endfor %}
+                </div>
+                <div class="footer-column">
+                    <h6>Услуги</h6>
+                    <a href="{% url 'repair' %}">Ремонт инструмента</a>
+                    <a href="{% url 'useful_resources' %}">Запчасти</a>
+                </div>
+                <div class="footer-column">
+                    <h6>Информация</h6>
+                    <a href="{% url 'delivery' %}">Получение заказа</a>
+                    <a href="{% url 'payment' %}">Оплата</a>
+                    <a href="{% url 'warranty' %}">Гарантия</a>
+                    <a href="{% url 'privacy_policy' %}">Политика конфиденциальности</a>
+                    <a href="{% url 'terms_of_use' %}">Условия использования</a>
+                </div>
+                <div class="footer-column">
+                    <h6>Поддержка</h6>
+                    <a href="{% url 'contact' %}">Контакты</a>
+                    <a href="{% url 'contact' %}#faq">FAQ</a>
+                    <a href="#">Возврат товара</a>
+                </div>
+            </div>
+
+            <!-- Row 3: Trust + Social -->
+            <div class="footer-row footer-bottom">
+                <div class="footer-trust-icons">
+                    <i class="fas fa-shield-alt" title="Гарантия качества"></i>
+                    <i class="fas fa-store" title="Самовывоз"></i>
+                    <i class="fas fa-tag" title="Лучшая цена"></i>
+                    <i class="fas fa-tools" title="Профессиональный инструмент"></i>
+                </div>
+                <div class="footer-social-icons">
+                    <a href="#" target="_blank" aria-label="VK"><i class="fab fa-vk"></i></a>
+                    <a href="https://max.ru/" target="_blank" aria-label="MAX" class="footer-max-icon"><img src="https://max.ru/s/img/big-logo.png" alt="MAX"></a>
+                    <a href="#" target="_blank" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
+                    <a href="#" target="_blank" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- Row 4: Copyright -->
+    <div class="copyright">
+        <div class="container">
+            <span>© {% now "Y" %} InstrumentPSK, Псков</span>
+            <div class="copyright-links">
+                <a href="{% url 'privacy_policy' %}">Политика конфиденциальности</a>
+                <a href="{% url 'terms_of_use' %}">Условия использования</a>
+            </div>
+        </div>
+    </div>
+    <!-- QUICK VIEW MODAL COMPONENT -->
+    <div class="modal-overlay">
+        <div class="modal-content" role="dialog" aria-modal="true">
+            <button class="modal-close" aria-label="Close">&times;</button>
+
+            <div class="modal-img">
+                <img src="" alt="Product Image" class="modal-product-image">
+                <!-- Image navigation dots can be added here if multiple images are supported -->
+                <div class="modal-img-nav">
+                    <!-- Dots will be populated by JS if needed -->
+                </div>
+            </div>
+
+            <div class="modal-details">
+                <a href="#" class="modal-brand">Brand Name</a>
+                <h2 class="modal-name">Product Name</h2>
+                <div class="modal-rating">
+                    <!-- Star icons will be populated by JS -->
+                    <span class="reviews-count">(0)</span>
+                </div>
+                <p class="modal-desc">Product short description...</p>
+                
+                <div class="modal-specs-grid">
+                    <!-- Specs will be populated by JS -->
+                </div>
+
+                <a href="#" class="modal-all-specs-link" style="color: #FF6B00; font-size: 0.9rem; font-weight: 700; text-decoration: underline; margin-bottom: 20px; display: inline-block;">Все характеристики</a>
+
+                <div class="modal-pricing-section">
+                    <div class="modal-price-display">
+                        <span class="modal-current-price">0.00 <span class="currency">₽</span></span>
+                        <span class="modal-old-price" style="display: none;"></span>
+                        <span class="modal-discount-percent" style="display: none;"></span>
+                    </div>
+                    <div class="modal-actions-bottom">
+                        <button class="modal-add-btn" data-product-id="">В корзину</button>
+                        <a href="#" class="modal-view-product-btn" style="background: #f1f5f9; color: #0f172a; padding: 16px 20px; border-radius: 14px; font-weight: 800; font-size: 13px; text-transform: uppercase; text-decoration: none; text-align: center; flex: 1; transition: all 0.2s;">Подробнее</a>
+                        <button class="modal-favorite-btn" data-product-id="">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-heart"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Quick View Modal -->
+
+
+    <div id="cookie-consent" class="cookie-banner" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); width: 90%; max-width: 500px; background: white; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border-radius: 20px; padding: 20px 25px; z-index: 10001; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); border: 1px solid #f1f5f9;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="font-size: 2.5rem; color: #FF6B00; flex-shrink: 0;"><i class="fas fa-cookie-bite"></i></div>
+            <div style="flex: 1;">
+                <h5 style="margin: 0 0 5px 0; font-weight: 800; color: #0f172a; font-size: 1.1rem;">Мы используем файлы cookie</h5>
+                <p style="margin: 0; font-size: 0.9rem; color: #64748B; line-height: 1.5;">Это помогает нам делать сайт лучше и удобнее для вас. Продолжая работу, вы соглашаетесь с нашей <a href="{% url 'privacy_policy' %}" style="color: #FF6B00; text-decoration: underline;">политикой конфиденциальности</a>.</p>
+            </div>
+            <button onclick="acceptCookies()" style="background: #FF6B00; color: white; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap;">Хорошо</button>
+        </div>
+    </div>
+
+    <script>
+    function acceptCookies() {
+        localStorage.setItem('cookie_consent_accepted', 'true');
+        const banner = document.getElementById('cookie-consent');
+        banner.style.transform = 'translateX(-50%) translateY(100px)';
+        banner.style.opacity = '0';
+        setTimeout(() => { banner.style.display = 'none'; }, 500);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!localStorage.getItem('cookie_consent_accepted')) {
+            const banner = document.getElementById('cookie-consent');
+            banner.style.display = 'block';
+            setTimeout(() => {
+                banner.style.transform = 'translateX(-50%) translateY(0)';
+                banner.style.opacity = '1';
+            }, 1000);
+        }
+    });
+    </script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="{% static 'app/scripts/bootstrap.js' %}"></script>
+    <script src="{% static 'app/scripts/custom.js' %}"></script>
+    <script src="{% static 'app/scripts/respond.js' %}"></script>
+    <script src="{% static 'app/js/dropdown.js' %}"></script>
+    <script src="{% static 'app/js/category-hover.js' %}"></script>
+    <script src="{% static 'app/js/live_search.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.27.3/trumbowyg.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.27.3/langs/ru.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+    <script src="{% static 'app/js/quick-view.js' %}"></script>
+    <script src="{% static 'app/js/hero-animations.js' %}"></script>
+    {% block scripts %}{% endblock %}
+    <script>
+        // Global toast function
+        window.showToast = function(message, type = 'success', productTitle = null, duration = 2000) {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) return;
+
+            const toast = document.createElement('div');
+            toast.classList.add('toast-message');
+
+            let iconHtml = '';
+            let displayMessage = message;
+
+            if (type === 'success') {
+                iconHtml = `<div class="icon-wrapper"><svg class="icon success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+                if (productTitle) {
+                    displayMessage = `
+                        <div class="top-line">
+                            <span class="product-title">${productTitle}</span>
+                        </div>
+                        <div class="message-text">добавлен в корзину</div>
+                    `;
+                }
+            } else if (type === 'error') {
+                iconHtml = `<svg class="icon error" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+            }
+            // Add more types as needed
+
+            toast.innerHTML = `
+                ${iconHtml}
+                <div class="content">${displayMessage}</div>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Show animation
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Auto-hide
+            const timeoutId = setTimeout(() => {
+                toast.classList.remove('show');
+                toast.classList.add('hide');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, duration);
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const backToTop = document.getElementById('backToTop');
+
+            if (backToTop) {
+                const progressCircle = backToTop.querySelector('.back-to-top-circle');
+                const circumference = 2 * Math.PI * 16;
+                
+                if (progressCircle) {
+                    progressCircle.style.strokeDasharray = circumference;
+                }
+                
+                window.addEventListener('scroll', () => {
+                    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+                    const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+                    const clientHeight = document.documentElement.clientHeight || document.body.clientHeight;
+
+                    const scrollPercent = (scrollTop / (scrollHeight - clientHeight)) * 100;
+                    
+                    if (scrollPercent > 10) {
+                        backToTop.classList.add('show');
+                    } else {
+                        backToTop.classList.remove('show');
+                    }
+                    
+                    if (progressCircle) {
+                        const offset = circumference - (scrollPercent / 100) * circumference;
+                        progressCircle.style.strokeDashoffset = offset;
+                    }
+                });
+
+                backToTop.addEventListener('click', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+        });
+
+        // Global Comparison Bar
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function updateGlobalComparisonBar() {
+            const bar = document.getElementById('globalComparisonBar');
+            const countEl = document.getElementById('globalComparisonCount');
+            if (!bar || !countEl) return;
+
+            fetch('/ajax/compare/toggle/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ product_id: 0, check_only: true })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const count = data.comparison_count || 0;
+                countEl.textContent = count + ' ' + pluralize(count, 'товар', 'товара', 'товаров');
+                if (count > 0) {
+                    bar.classList.add('visible');
+                } else {
+                    bar.classList.remove('visible');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function pluralize(n, one, few, many) {
+            if (n % 10 === 1 && n % 100 !== 11) return one;
+            if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return few;
+            return many;
+        }
+
+        function clearGlobalComparison() {
+            const bar = document.getElementById('globalComparisonBar');
+            const countEl = document.getElementById('globalComparisonCount');
+            
+            bar.classList.remove('visible');
+            
+            fetch('/ajax/compare/clear/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (countEl) {
+                        countEl.textContent = '0 товаров';
+                    }
+                    // Reload page if on comparison page
+                    if (window.location.pathname.includes('/compare/')) {
+                        location.reload();
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', updateGlobalComparisonBar);
+    </script>
+    
+    <!-- PWA Service Worker -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('{% static 'app/js/service-worker.js' %}')
+                .then((registration) => {
+                    console.log('PWA Service Worker registered:', registration.scope);
+                })
+                .catch((error) => {
+                    console.log('PWA Service Worker registration failed:', error);
+                });
+        });
+    }
+    
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installBtn = document.createElement('div');
+    installBtn.id = 'pwa-install-btn';
+    installBtn.innerHTML = '<i class="fas fa-download"></i> Установить приложение';
+    installBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #FF6B00 0%, #E55A00 100%);
+        color: white;
+        padding: 14px 28px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: pulse 2s infinite;
+    `;
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'flex';
+    });
+    
+    installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+            // Для десктопа - показать инструкцию
+            alert('Для установки:\n1. Нажмите Ctrl+D (Windows) или Cmd+D (Mac)\n2. Выберите "На экран Домой"');
+            return;
+        }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('Install outcome:', outcome);
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+    });
+    
+    window.addEventListener('appinstalled', () => {
+        installBtn.style.display = 'none';
+        console.log('PWA installed successfully');
+    });
+    
+    // Скрываем кнопку если PWA уже установлен
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        installBtn.style.display = 'none';
+    }
+    
+    document.body.appendChild(installBtn);
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const hamburger = document.querySelector('.hamburger-menu');
+        const mainNav = document.querySelector('.main-nav');
+        if(hamburger && mainNav) {
+            hamburger.addEventListener('click', function() {
+                mainNav.classList.toggle('active');
+            });
+        }
+    });
+    </script>
+</body>
+</html>

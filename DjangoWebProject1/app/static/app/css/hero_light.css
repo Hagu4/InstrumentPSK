@@ -1,0 +1,186 @@
+/* Light Theme Overrides and New Styles for Hero Block */
+
+/* 1. Variable Overrides for Light Theme */
+:root {
+    --hero-bg-color: #FFFFFF;
+    --hero-text-color: #212529;
+    --hero-subtext-color: #6C757D;
+    --hero-accent-color: #F97316;
+    --hero-outline-btn-border: #ced4da;
+    --hero-stats-box-bg: #f8f9fa;
+    --hero-stats-box-border: #e9ecef;
+}
+
+/* 2. Apply Light Theme to Hero */
+.hero {
+    background-color: var(--hero-bg-color);
+}
+
+.hero-text h1 {
+    color: var(--hero-text-color);
+}
+
+.hero-text h1 span {
+    color: var(--hero-accent-color);
+}
+
+.hero-text p {
+    color: var(--hero-subtext-color);
+}
+
+/* 3. Button Styling */
+.hero .btn-primary,
+.hero .btn-secondary {
+    padding: 18px 40px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    border-radius: 12px;
+    text-decoration: none;
+    display: inline-block;
+    min-width: 260px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.hero .btn-primary {
+    background: var(--hero-accent-color);
+    color: white;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);
+}
+
+.hero .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.3);
+}
+
+.hero .btn-secondary {
+    color: var(--hero-text-color);
+    border: 2px solid var(--hero-outline-btn-border);
+    background-color: transparent;
+}
+
+.hero .btn-secondary:hover {
+    border-color: var(--hero-accent-color);
+    color: var(--hero-accent-color);
+    background-color: transparent;
+    transform: translateY(-2px);
+}
+
+
+/* 4. Circular Stats Block */
+.hero-visual {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-badge {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Rotating dashed border */
+.hero-badge::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border: 2px dashed var(--hero-accent-color);
+    border-radius: 50%;
+    animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.hero-badge-inner .big-num {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--hero-accent-color);
+}
+
+.hero-badge-inner .big-label {
+    font-size: 1.25rem;
+    color: var(--hero-text-color);
+    margin-top: 0px;
+}
+
+.hero-badge-inner .big-sub {
+    font-size: 0.9rem;
+    color: var(--hero-subtext-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 5px;
+}
+
+
+/* 5. Stats Box below circle */
+.hero-stats {
+    display: flex;
+    gap: 20px;
+    padding: 15px 30px;
+    background-color: var(--hero-stats-box-bg);
+    border: 1px solid var(--hero-stats-box-border);
+    border-radius: 12px;
+    margin-top: 30px;
+}
+
+.hero-stat .num {
+    color: var(--hero-accent-color);
+    font-weight: 700;
+}
+
+.hero-stat .label {
+    color: var(--hero-subtext-color);
+}
+
+/* 6. Animation Initial States */
+.hero-text, .hero-visual {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.hero-text.is-visible, .hero-visual.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 7. Mobile Adaptation Overrides */
+@media (max-width: 992px) {
+    .hero-visual {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-text h1 {
+        font-size: clamp(32px, 8vw, 42px) !important;
+        word-break: break-word;
+        hyphens: auto;
+    }
+    .hero .btn-primary,
+    .hero .btn-secondary {
+        min-width: 100% !important;
+        width: 100% !important;
+        margin-bottom: 12px;
+    }
+}

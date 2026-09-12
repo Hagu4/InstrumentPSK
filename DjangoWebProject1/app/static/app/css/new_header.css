@@ -1,0 +1,455 @@
+/* General Header Styling */
+.new-header {
+    position: fixed; /* Fixed position */
+    top: 0;          /* At the top */
+    width: 100%;     /* Full width */
+    z-index: 100;    /* Ensure it's above other content */
+    display: flex;
+    align-items: center;
+    padding: 16px 32px;
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    justify-content: space-between; /* Ensure space between main sections */
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Logo */
+.new-header .logo-placeholder {
+    width: auto; /* Allow proportional scaling */
+    height: 45px; /* Final requested size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--header-text);
+    margin-right: 30px; /* Adjust as needed for desired spacing */
+}
+.new-header .logo-placeholder img{
+    height: 45px; /* Final requested size */
+    width: auto;
+}
+/* Navigation */
+.new-header .main-nav {
+    display: flex;
+    align-items: center;
+    gap: 16px; /* Adjusted gap for more space */
+    flex-grow: 1; /* Allow navigation to take available space */
+}
+
+.new-header .nav-link {
+    display: inline-flex; /* Use inline-flex for better control */
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--header-text);
+    font-size: 14px; /* Adjusted font size for more space */
+    font-weight: 500;
+    transition: color 0.2s ease;
+    position: relative; /* Needed for absolute positioning of pseudo-element */
+    overflow: hidden; /* Hide the bar when it's outside */
+    padding: 8px 8px; /* Adjusted padding for more space */
+    padding-bottom: 5px; /* Add some space for the underline */
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+.new-header .nav-link:hover {
+    color: var(--header-hover); /* Orange */
+}
+
+.new-header .nav-link::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%); /* Center the bar */
+    width: 0; /* Start with zero width */
+    height: 3px; /* Thickness of the bar */
+    background-color: var(--header-hover); /* Highlight color */
+    transition: width 0.3s ease-out; /* Animation for width change */
+}
+
+.new-header .nav-link:hover::before {
+    width: 100%; /* Expand to full width on hover */
+}
+
+
+.new-header .nav-link.catalog-link {
+    font-weight: 600;
+}
+
+.new-header .search-container {
+    display: flex;
+    flex-grow: 1;
+    max-width: 300px;
+    margin-left: auto;
+    border: 1px solid var(--header-border);
+    border-radius: 8px;
+    overflow: visible;
+    position: relative;
+    z-index: 1001;
+    background-color: var(--theme-surface);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.new-header .search-container #search-input {
+    border: none;
+    padding: 8px 12px;
+    flex-grow: 1;
+    outline: none;
+    font-size: 14px;
+    background-color: transparent;
+    color: var(--theme-text-primary);
+}
+
+.new-header .search-container #search-input::placeholder {
+    color: var(--theme-text-muted);
+}
+
+.new-header .search-container #search-input:focus {
+    border-color: var(--header-hover);
+    box-shadow: 0 0 0 0.2rem rgba(var(--theme-accent-primary-rgb), 0.25);
+}
+
+
+.new-header .search-button {
+    border: none;
+    background-color: var(--header-hover);
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border-radius: 0 8px 8px 0;
+    transition: background-color 0.2s ease;
+}
+
+/* Contacts and Actions */
+.new-header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-left: 24px;
+}
+
+.new-header .phone-number {
+    text-decoration: none;
+    color: var(--header-hover);
+    font-weight: bold;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.new-header .phone-number:hover {
+    color: var(--theme-accent-primary-hover);
+}
+
+.new-header .icon-group {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.new-header .action-icon {
+    position: relative;
+    cursor: pointer;
+    color: var(--header-text);
+    transition: color 0.2s ease;
+}
+
+.new-header .action-icon:hover {
+    color: var(--header-hover);
+}
+
+/* Specific size for unauthenticated profile SVG */
+.new-header .profile-link svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Profile dropdown button */
+.new-header .profile-toggle-btn {
+    background: none;
+    border: none;
+    padding: 4px; /* Match cart visual size better */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--header-text);
+    font-size: 0.95rem;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    height: 32px;
+}
+
+.new-header .profile-toggle-btn:hover {
+    background-color: var(--theme-hover-bg);
+    color: var(--header-hover);
+}
+
+.new-header .profile-toggle-btn .fa-user-circle {
+    font-size: 22px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.new-header .profile-toggle-btn .dropdown-arrow {
+    font-size: 14px;
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+/* Specific size for cart SVG */
+.new-header .cart-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 4px;
+    position: relative;
+}
+
+.new-header .cart-icon-container svg {
+    width: 24px;
+    height: 24px;
+}
+
+.new-header .cart-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background-color: var(--header-hover);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--header-bg);
+    transition: transform 0.2s ease-in-out, background-color 0.2s, border-color 0.3s;
+    transform-origin: center;
+    z-index: 101;
+}
+
+.new-header .cart-badge.scale-in {
+    animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.new-header .cart-badge.pulse {
+    animation: pulse 0.5s ease;
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}
+
+.new-header .profile-dropdown-container.show .profile-toggle-btn .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* Profile dropdown menu */
+.new-header .profile-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    background-color: var(--theme-surface);
+    border: 1px solid var(--theme-border);
+    border-radius: 5px;
+    box-shadow: var(--theme-shadow-lg);
+    min-width: 220px;
+    z-index: 1000;
+    display: none;
+    padding: 10px 0;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.new-header .profile-dropdown-container.show .profile-dropdown-menu {
+    display: block;
+}
+
+.new-header .profile-dropdown-menu .dropdown-section {
+    padding: 5px 0;
+    border-bottom: 1px solid var(--theme-border);
+    transition: border-color 0.3s ease;
+}
+
+.new-header .profile-dropdown-menu .dropdown-section:last-child {
+    border-bottom: none;
+}
+
+.new-header .profile-dropdown-menu .dropdown-section-title {
+    font-size: 14px;
+    color: var(--theme-text-secondary);
+    padding: 8px 15px 5px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.new-header .profile-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 15px;
+    color: var(--theme-text-primary);
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 15px;
+}
+
+.new-header .profile-dropdown-menu .dropdown-item:hover {
+    background-color: var(--theme-hover-bg);
+    color: var(--header-hover);
+}
+
+.new-header .profile-dropdown-menu .dropdown-item i {
+    width: 20px;
+    text-align: center;
+}
+
+.new-header .profile-dropdown-menu .logout-btn {
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--theme-danger);
+    font-size: 15px;
+    padding: 8px 15px;
+}
+
+.new-header .profile-dropdown-menu .logout-btn:hover {
+    background-color: var(--theme-hover-bg);
+}
+
+/* SVG icon styles */
+.new-header svg {
+    stroke-width: 2;
+    fill: none;
+}
+
+/* Remove focus outlines */
+.new-header a:focus,
+.new-header button:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--header-text);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+    background-color: var(--theme-hover-bg);
+    color: var(--header-hover);
+}
+
+.theme-toggle-btn i {
+    font-size: 18px;
+}
+
+[data-theme="dark"] .theme-toggle-btn .fa-sun {
+    display: none;
+}
+
+[data-theme="dark"] .theme-toggle-btn .fa-moon {
+    display: block;
+}
+
+[data-theme="dark"] .theme-toggle-btn .fa-moon {
+    display: none;
+}
+
+[data-theme="dark"] .theme-toggle-btn .fa-sun {
+    display: block;
+}
+
+:not([data-theme="dark"]) .theme-toggle-btn .fa-sun {
+    display: none;
+}
+
+:not([data-theme="dark"]) .theme-toggle-btn .fa-moon {
+    display: block;
+}
+
+/* Mobile Adaptation for Header */
+.hamburger-menu {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--header-text);
+}
+
+@media (max-width: 768px) {
+    .hamburger-menu {
+        display: block;
+    }
+    .new-header .main-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background-color: var(--header-bg);
+        flex-direction: column;
+        padding: 16px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .new-header .main-nav.active {
+        display: flex;
+    }
+    .new-header .nav-link {
+        width: 100%;
+        padding: 12px 8px;
+        border-bottom: 1px solid var(--header-border);
+    }
+    .new-header {
+        padding: 12px 16px;
+        flex-wrap: wrap; /* Allow wrapping if needed */
+        justify-content: space-between;
+    }
+    .new-header .logo-placeholder {
+        margin-right: auto;
+    }
+    .new-header .search-container {
+        display: none !important;
+    }
+    /* Hide desktop actions except profile/cart, or adjust them */
+    .new-header .header-actions {
+        margin-left: 0;
+        gap: 16px;
+    }
+    .new-header .phone-number {
+        display: none; /* Hide phone number to save space */
+    }
+    .theme-toggle-btn {
+        display: none; /* Hide theme toggle to save space, move to menu if needed */
+    }
+}

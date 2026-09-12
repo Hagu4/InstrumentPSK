@@ -1,0 +1,108 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load auth_extras %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/order_detail.css' %}" />
+
+<div class="container mt-4 mb-4">
+    <div class="order-detail-header">
+        <div>
+            <h1>Заказ №{{ order.id }}</h1>
+            <span class="order-date">от {{ order.order_date|default:order.created_at|date:"d F Y" }}</span>
+        </div>
+        <a href="{% url 'download_order_check' order.id %}" class="download-receipt"><i class="fas fa-file-pdf"></i> Скачать чек (PDF)</a>
+    </div>
+
+    {# Status Stepper #}
+    {% with current_status=order.status %}
+    <div class="order-status-stepper">
+        {% if current_status == 'CANCELLED' %}
+        <div class="step completed" style="width: 100%;">
+            <div class="step-icon" style="background-color: #EF4444; border-color: #EF4444;"><i class="fas fa-times"></i></div>
+            <div class="step-label" style="color: #EF4444;">Заказ отменен</div>
+        </div>
+        {% else %}
+        <div class="step {% if current_status != 'CREATED' %}completed{% endif %} {% if current_status == 'CREATED' %}active{% endif %}">
+            <div class="step-icon"><i class="fas fa-check"></i></div>
+            <div class="step-label">Создан</div>
+        </div>
+        <div class="step {% if current_status == 'READY_FOR_PICKUP' or current_status == 'COMPLETED' %}completed{% endif %} {% if current_status == 'ASSEMBLING' %}active{% endif %}">
+            <div class="step-icon"><i class="fas fa-check"></i></div>
+            <div class="step-label">В сборке</div>
+        </div>
+        <div class="step {% if current_status == 'COMPLETED' %}completed{% endif %} {% if current_status == 'READY_FOR_PICKUP' %}active{% endif %}">
+            <div class="step-icon"><i class="fas fa-check"></i></div>
+            <div class="step-label">Готов к выдаче</div>
+        </div>
+        <div class="step {% if current_status == 'COMPLETED' %}completed active{% endif %}">
+            <div class="step-icon"><i class="fas fa-check"></i></div>
+            <div class="step-label">Выдан и оплачен</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endwith %}
+    
+    <div class="order-detail-layout">
+        {# Left Column: Order Items #}
+        <div class="order-items-card">
+            <h3>Состав заказа</h3>
+            {% for item in order_items %}
+            <div class="order-item">
+                {% with first_image=item.product.images.first %}
+                    <img src="{% if first_image %}{{ first_image.image.url }}{% else %}{% static 'app/content/logo.png' %}{% endif %}" alt="{{ item.product.title }}" class="order-item-img" style="{% if not first_image %}opacity: 0.5;{% endif %}">
+                {% endwith %}
+                <div class="order-item-info">
+                    <a href="{{ item.product.get_absolute_url }}">{{ item.product.title }}</a>
+                    <div class="item-meta" style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                        <span class="item-sku" style="color: #64748B; font-size: 0.85rem;">Артикул: {{ item.product.sku|default:item.product.id }}</span>
+                        {% if item.is_preorder %}
+                        <span class="preorder-badge" style="background-color: #E0F2FE; color: #0369A1; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                            <i class="fas fa-clock"></i> Под заказ
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="order-item-qty">{{ item.quantity }} шт x {{ item.product.price|floatformat:"0" }} ₽</div>
+                <div class="order-item-total">{{ item.get_cost|floatformat:"0" }} ₽</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {# Right Column: Delivery Info #}
+        <div class="delivery-info-card">
+            <h3>Данные получателя</h3>
+            <div class="info-field">
+                <span class="info-field-label">Имя</span>
+                <span class="info-field-value">{{ order.user.first_name|default:order.user.username }}</span>
+            </div>
+            <div class="info-field">
+                <span class="info-field-label">Телефон</span>
+                <span class="info-field-value">{{ order.user.profile.phone_number|default:"Не указан" }}</span>
+            </div>
+            <div class="info-field">
+                <span class="info-field-label">Способ доставки</span>
+                <span class="info-field-value">{{ order.get_delivery_method_display|default:"Не указан" }}</span>
+            </div>
+            {% if order.delivery_address %}
+            <div class="info-field">
+                <span class="info-field-label">Адрес</span>
+                <span class="info-field-value">{{ order.delivery_address }}</span>
+            </div>
+            {% endif %}
+            <div class="info-field">
+                <span class="info-field-label">Способ оплаты</span>
+                <span class="info-field-value">{{ order.get_payment_method_display|default:"Не указан" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="order-detail-footer">
+        <div class="order-grand-total">Итого к оплате: {{ order.total_price|floatformat:"0" }} ₽</div>
+        {% if order.status == 'COMPLETED' %}
+        <a href="{% url 'reorder' order.id %}" class="btn-reorder">Повторить заказ</a>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

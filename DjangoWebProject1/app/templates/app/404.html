@@ -1,0 +1,151 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Страница не найдена (404)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+
+        :root {
+            --primary-color: #007bff;
+            --primary-hover-color: #0056b3;
+            --text-dark: #343a40;
+            --text-light: #6c757d;
+            --background-color: #f8f9fa;
+            --huge-text-color: #e9ecef;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .container-404 {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background-color: var(--background-color);
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+
+        .huge-text-404 {
+            font-size: 120px;
+            font-weight: 900;
+            color: var(--huge-text-color);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .animated-zero {
+            display: inline-block;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        p {
+            font-size: 18px;
+            color: var(--text-light);
+            margin-bottom: 30px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 12px 24px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover-color);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container-404">
+        <div class="huge-text-404">
+            4<span class="animated-zero">0</span>4
+        </div>
+        <div class="content-wrapper">
+            <h1>Ой, кажется мы свернули не туда!</h1>
+            <p>Эта страница куда-то испарилась, но не переживайте, у нас есть еще много интересного.</p>
+            <div class="button-group">
+                <a href="{% url 'home' %}" class="btn btn-primary">На главную</a>
+                <a href="{% url 'contact' %}" class="btn btn-secondary">Связаться с поддержкой</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

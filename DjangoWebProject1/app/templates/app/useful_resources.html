@@ -1,0 +1,45 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/resources.css' %}" />
+
+<div class="container">
+    <div style="padding: 20px 0;">
+        <h2>Полезные ресурсы</h2>
+        <p>Здесь собраны полезные ссылки и ресурсы, которые могут вам пригодиться.</p>
+    </div>
+
+    <div class="resource-grid">
+        {% for resource in resources %}
+        <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="resource-card-link">
+            <div class="resource-card">
+                <div class="card-logo-area">
+                    {% if 'Bosch' in resource.title %}
+                        <img src="https://www.kubaninstrument.ru/images/brands/bosch-logo-64906409b140e185059317.jpg" alt="Логотип Bosch">
+                    {% elif 'Makita' in resource.title %}
+                        <img src="https://myjki.com/img/cms/dod_foto/-Makita/logo-Makita.jpg" alt="Логотип Makita">
+                    {% elif 'Husqvarna' in resource.title %}
+                        <img src="https://cdn1.ozonusercontent.com/s3/product-service-meta-media/ed508be9-4407-46cd-9cbc-aad5ced96d4f.jpg" alt="Логотип Husqvarna">
+                    {% elif 'запчастей' in resource.title %}
+                        <i class="fas fa-cog"></i>
+                    {% elif 'Советы' in resource.title %}
+                        <i class="fas fa-lightbulb"></i>
+                    {% else %}
+                        <i class="fas fa-link"></i>
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    <h3>{{ resource.title }}</h3>
+                    <p>{{ resource.description }}</p>
+                </div>
+                <div class="card-footer">
+                    <span>Перейти на сайт</span>
+                    <span>&rarr;</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

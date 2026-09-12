@@ -1,0 +1,124 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block content %}
+{% load static %}
+{% load app_filters %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/manager_dashboard.css' %}" />
+
+<div class="container manager-dashboard-container">
+    <h1 class="mb-4">Панель управления заявками на ремонт</h1>
+
+    <!-- Stat Cards -->
+    <div class="stat-cards">
+        <div class="stat-card">
+            <h5>Всего заявок</h5>
+            <div class="stat-number">{{ stats.total }}</div>
+        </div>
+        <div class="stat-card">
+            <h5>В работе</h5>
+            <div class="stat-number">{{ stats.in_progress }}</div>
+        </div>
+        <div class="stat-card">
+            <h5>Готовы к выдаче</h5>
+            <div class="stat-number">{{ stats.ready }}</div>
+        </div>
+        <div class="stat-card">
+            <h5>Новые</h5>
+            <div class="stat-number">{{ stats.new }}</div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="dashboard-table-container">
+        <table class="dashboard-table">
+            <thead>
+                <tr>
+                    <th>Номер</th>
+                    <th>Дата</th>
+                    <th>Клиент</th>
+                    <th>Инструмент</th>
+                    <th>Проблема</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>{{ req.request_number|default:req.id }}</td>
+                    <td>{{ req.created_at|date:"d.m.Y H:i" }}</td>
+                    <td class="client-phone">
+                        {{ req.name }}<br>
+                        <a href="tel:{{ req.phone }}">{{ req.phone|format_phone }}</a><br>
+                        <a href="mailto:{{ req.email }}">{{ req.email }}</a>
+                    </td>
+                    <td>{{ req.tool_type }}</td>
+                    <td class="problem-cell" title="{{ req.description }}">{{ req.description }}</td>
+                    <td>
+                        <form method="post" class="status-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="request_id" value="{{ req.id }}">
+                            <select name="status" class="status-select" data-status="{{ req.status }}" onchange="this.form.submit()">
+                                {% for status_val, status_name in status_choices %}
+                                    <option value="{{ status_val }}" {% if req.status == status_val %}selected{% endif %}>
+                                        {{ status_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </td>
+                    <td class="actions-cell">
+                        <form method="post" onsubmit="return confirm('Вы уверены, что хотите удалить эту заявку?');" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="request_id" value="{{ req.id }}">
+                            <button type="submit" name="action" value="delete" class="action-btn delete-btn" title="Удалить">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center p-5">Нет заявок на ремонт.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.querySelector('.dashboard-table-container');
+
+    const closeAllProblemCells = (exceptCell) => {
+        container.querySelectorAll('.problem-cell.expanded').forEach(cell => {
+            if (cell !== exceptCell) {
+                cell.classList.remove('expanded');
+            }
+        });
+    };
+
+    container.addEventListener('click', function(event) {
+        const clickedCell = event.target.closest('.problem-cell');
+
+        if (clickedCell) {
+            event.stopPropagation();
+            const isAlreadyExpanded = clickedCell.classList.contains('expanded');
+            closeAllProblemCells(clickedCell);
+            if (!isAlreadyExpanded) {
+                clickedCell.classList.add('expanded');
+            }
+        }
+    });
+
+    document.addEventListener('click', function(event) {
+        if (!container.contains(event.target)) {
+            closeAllProblemCells(null);
+        }
+    });
+});
+</script>
+{% endblock %}

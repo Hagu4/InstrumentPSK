@@ -1,0 +1,226 @@
+/* 
+   MODERN DJANGO ADMIN REDESIGN - ULTIMATE SELECT2 & UI FIX
+   Targeting Jazzmin/Bootstrap admin interface
+*/
+
+:root {
+    --admin-accent: #FF6B00;
+    --admin-bg: #f4f7f6;
+    --admin-card-bg: #ffffff;
+    --admin-border: #e2e8f0;
+    --admin-text-dark: #1e293b;
+    --admin-text-muted: #64748b;
+    --admin-input-focus: rgba(255, 107, 0, 0.2);
+}
+
+/* 1. GLOBAL SELECT2 SELECTION (Closed state) */
+.select2-container--default .select2-selection--single,
+.select2-container--admin-autocomplete .select2-selection--single {
+    height: 48px !important;
+    padding: 8px 16px !important;
+    border: 2px solid #94a3b8 !important;
+    border-radius: 12px !important;
+    background-color: #fff !important;
+    transition: all 0.3s ease !important;
+}
+
+.select2-container--default.select2-container--open .select2-selection--single,
+.select2-container--admin-autocomplete.select2-container--open .select2-selection--single {
+    border-color: var(--admin-accent) !important;
+    box-shadow: 0 0 0 4px var(--admin-input-focus) !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__rendered {
+    line-height: 28px !important;
+    color: var(--admin-text-dark) !important;
+    font-weight: 600 !important;
+    padding-right: 72px !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow,
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__arrow {
+    height: 46px !important;
+    width: 34px !important;
+    top: 0 !important;
+    right: 0 !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b,
+.select2-container--admin-autocomplete .select2-selection--single .select2-selection__arrow b {
+    width: 9px !important;
+    height: 9px !important;
+    border: 0 !important;
+    border-right: 2px solid #64748b !important;
+    border-bottom: 2px solid #64748b !important;
+    margin: -7px 0 0 -6px !important;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.select2-container--default.select2-container--open .select2-selection__arrow b,
+.select2-container--admin-autocomplete.select2-container--open .select2-selection__arrow b {
+    border-color: var(--admin-accent) !important;
+    transform: rotate(225deg);
+    margin-top: -2px !important;
+}
+
+.select2-container .select2-selection--single .select2-selection__clear {
+    position: absolute !important;
+    top: 50% !important;
+    right: 36px !important;
+    transform: translateY(-50%);
+    width: 24px !important;
+    height: 24px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    z-index: 2;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.select2-container .select2-selection--single .select2-selection__clear:hover,
+.select2-container .select2-selection--single .select2-selection__clear:focus {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    outline: none !important;
+}
+
+/* 2. THE DROPDOWN LIST (The actual floating window) */
+.select2-dropdown {
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18) !important;
+    margin-top: 8px !important;
+    overflow: hidden !important;
+    z-index: 9999 !important;
+    background: #fff !important;
+}
+
+/* 3. SEARCH BOX INSIDE DROPDOWN */
+.select2-search--dropdown {
+    padding: 15px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+}
+
+.select2-search--dropdown .select2-search__field {
+    border-radius: 10px !important;
+    border: 1px solid var(--admin-border) !important;
+    padding: 10px 15px !important;
+    font-size: 0.95rem !important;
+}
+
+/* 4. THE RESULTS / ITEMS - FORCING LINES AND SPACING */
+.select2-results__options {
+    max-height: 400px !important;
+}
+
+.select2-results__option {
+    padding: 16px 20px !important; /* LARGE SPACING */
+    border-bottom: 1px solid #f1f5f9 !important; /* VISIBLE SEPARATOR */
+    color: var(--admin-text-dark) !important;
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    background-color: #fff !important;
+    display: block !important;
+}
+
+/* 5. HOVER & SELECTED STATE */
+.select2-results__option--highlighted[aria-selected],
+.select2-results__option--highlighted {
+    background-color: var(--admin-accent) !important;
+    color: #ffffff !important;
+    padding-left: 25px !important; /* Small slide effect */
+}
+
+.select2-results__option[aria-selected="true"] {
+    background-color: #fffaf0 !important;
+    color: var(--admin-accent) !important;
+    font-weight: 700 !important;
+}
+
+/* 6. REMOVE LAST BORDER */
+.select2-results__option:last-child {
+    border-bottom: none !important;
+}
+
+/* 7. LOADING & NO RESULTS */
+.select2-results__option--load-more,
+.select2-results__option--searching {
+    padding: 15px !important;
+    color: var(--admin-text-muted) !important;
+    text-align: center !important;
+    font-style: italic !important;
+}
+
+/* 8. GENERAL ADMIN FORM IMPROVEMENTS */
+.form-group.row {
+    padding: 25px 30px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+label {
+    font-weight: 800 !important;
+    color: #475569 !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase;
+}
+
+#id_description, textarea[name="description"] {
+    min-height: 500px !important;
+    font-size: 1.1rem !important;
+    line-height: 1.7 !important;
+}
+
+/* Unified controls on Django add and edit forms. */
+body.change-form input[type="text"],
+body.change-form input[type="number"],
+body.change-form input[type="email"],
+body.change-form input[type="url"],
+body.change-form input[type="password"],
+body.change-form input[type="date"],
+body.change-form input[type="time"],
+body.change-form input[type="datetime-local"],
+body.change-form textarea,
+body.change-form select {
+    box-sizing: border-box !important;
+    min-height: 48px !important;
+    padding: 10px 15px !important;
+    border: 2px solid #94a3b8 !important;
+    border-radius: 12px !important;
+    background-color: #fdfefe !important;
+    color: var(--admin-text-dark) !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+body.change-form input[type="text"]:focus,
+body.change-form input[type="number"]:focus,
+body.change-form input[type="email"]:focus,
+body.change-form input[type="url"]:focus,
+body.change-form input[type="password"]:focus,
+body.change-form input[type="date"]:focus,
+body.change-form input[type="time"]:focus,
+body.change-form input[type="datetime-local"]:focus,
+body.change-form textarea:focus,
+body.change-form select:focus {
+    border-color: var(--admin-accent) !important;
+    box-shadow: 0 0 0 4px var(--admin-input-focus) !important;
+    outline: none !important;
+}
+
+/* Product names often need substantially more editing space. */
+body.app-app.model-product.change-form #id_title {
+    width: 720px !important;
+    max-width: 100% !important;
+}

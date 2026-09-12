@@ -1,0 +1,58 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block content %}
+<div class="profile-dashboard">
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <span class="user-name">{{ user.first_name|default:user.username }}</span>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="{% url 'my_orders' %}" class="{% if request.resolver_match.url_name == 'my_orders' %}active{% endif %}">
+                        <i class="fas fa-box"></i>
+                        <span>Мои заказы</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'profile_edit' %}active{% endif %}">
+                        <i class="fas fa-user"></i>
+                        <span>Личные данные</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Адреса доставки</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'favorites' %}" class="{% if request.resolver_match.url_name == 'favorites' %}active{% endif %}">
+                        <i class="fas fa-heart"></i>
+                        <span>Избранное</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-logout">
+             <form id="logoutForm" action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Выйти</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="dashboard-main-content">
+        {% block profile_content %}
+        {# This block will be replaced by child templates #}
+        {% endblock %}
+    </main>
+</div>
+{% endblock %}

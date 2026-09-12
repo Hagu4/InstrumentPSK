@@ -1,0 +1,190 @@
+{% extends "app/layout.html" %}
+
+{% block content %}
+<div class="container mt-4 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">{{ title }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <fieldset>
+                    <legend class="h5">Основная информация</legend>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}<div class="invalid-feedback d-block">{{ form.title.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}<div class="invalid-feedback d-block">{{ form.category.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.price.id_for_label }}" class="form-label">{{ form.price.label }}</label>
+                            {{ form.price }}
+                             {% if form.price.errors %}<div class="invalid-feedback d-block">{{ form.price.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.quantity.id_for_label }}" class="form-label">{{ form.quantity.label }}</label>
+                            {{ form.quantity }}
+                             {% if form.quantity.errors %}<div class="invalid-feedback d-block">{{ form.quantity.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                         {% if form.description.errors %}<div class="invalid-feedback d-block">{{ form.description.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label">{{ form.image.label }}</label>
+                        {{ form.image }}
+                        {% if form.image.errors %}<div class="invalid-feedback d-block">{{ form.image.errors }}</div>{% endif %}
+                    </div>
+                </fieldset>
+
+                <hr class="my-4">
+
+                <fieldset>
+                    <legend class="h5">Характеристики</legend>
+                    <div id="characteristic-form-list">
+                        {{ formset.management_form }}
+                        {% for form in formset.forms %}
+                        <div class="card mb-3 characteristic-form" id="formset-row-{{ forloop.counter0 }}">
+                            <div class="card-body">
+                                <div class="row align-items-end">
+                                    {{ form.id }}
+                                    <div class="col-md-5">
+                                        <label for="{{ form.characteristic.id_for_label }}" class="form-label">{{ form.characteristic.label }}</label>
+                                        {{ form.characteristic }}
+                                        {% if form.characteristic.errors %}<div class="invalid-feedback d-block">{{ form.characteristic.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label for="{{ form.value.id_for_label }}" class="form-label">{{ form.value.label }}</label>
+                                        {{ form.value }}
+                                        {% if form.value.errors %}<div class="invalid-feedback d-block">{{ form.value.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        {% if form.instance.pk %}
+                                        <div class="form-check d-none">
+                                            {{ form.DELETE }}
+                                            <label for="{{ form.DELETE.id_for_label }}" class="form-check-label">{{ form.DELETE.label }}</label>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div id="empty-form" class="d-none">
+                        <div class="card mb-3 characteristic-form" id="formset-row-__prefix__">
+                             <div class="card-body">
+                                <div class="row align-items-end">
+                                    {{ formset.empty_form.id }}
+                                    <div class="col-md-5">
+                                        <label for="id_characteristics-__prefix__-characteristic" class="form-label">Характеристика</label>
+                                        {{ formset.empty_form.characteristic }}
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label for="id_characteristics-__prefix__-value" class="form-label">Значение</label>
+                                        {{ formset.empty_form.value }}
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        <button type="button" class="btn btn-danger remove-form-btn">Удалить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="add-form" class="btn btn-secondary"><i class="fas fa-plus"></i> Добавить характеристику</button>
+                </fieldset>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'catalog' %}" class="btn btn-outline-secondary me-2">Отмена</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Сохранить товар</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addFormBtn = document.getElementById('add-form');
+    const formList = document.getElementById('characteristic-form-list');
+    const emptyFormTemplate = document.getElementById('empty-form').innerHTML;
+    const totalFormsInput = document.getElementById('id_characteristics-TOTAL_FORMS');
+
+    function attachRemoveListener(formElement) {
+        const removeBtn = formElement.querySelector('.remove-form-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                formElement.remove();
+            });
+        }
+    }
+
+    addFormBtn.addEventListener('click', function() {
+        let formNum = parseInt(totalFormsInput.value);
+        let newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formNum);
+        
+        let tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newFormHtml;
+        const newFormElement = tempDiv.firstElementChild;
+        
+        formList.appendChild(newFormElement);
+        attachRemoveListener(newFormElement);
+
+        totalFormsInput.value = formNum + 1;
+    });
+
+    document.querySelectorAll('.characteristic-form').forEach(form => {
+        let deleteCheckbox = form.querySelector('input[type="checkbox"][id$="-DELETE"]');
+        if (deleteCheckbox) {
+            let removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-outline-danger btn-sm w-100';
+            removeBtn.innerText = 'Удалить';
+            
+            removeBtn.addEventListener('click', function() {
+                deleteCheckbox.checked = !deleteCheckbox.checked;
+                const cardBody = form.querySelector('.card-body');
+                if (deleteCheckbox.checked) {
+                    cardBody.style.opacity = '0.5';
+                    cardBody.style.textDecoration = 'line-through';
+                    this.innerText = 'Восстановить';
+                    this.classList.remove('btn-outline-danger');
+                    this.classList.add('btn-warning');
+                } else {
+                    cardBody.style.opacity = '1';
+                    cardBody.style.textDecoration = 'none';
+                    this.innerText = 'Удалить';
+                    this.classList.remove('btn-warning');
+                    this.classList.add('btn-outline-danger');
+                }
+            });
+            
+            let lastCol = form.querySelector('.row > div:last-child');
+            if (lastCol) {
+                lastCol.appendChild(removeBtn);
+            }
+        } else {
+             const removeBtn = form.querySelector('.remove-form-btn');
+             if(removeBtn) {
+                attachRemoveListener(form);
+             }
+        }
+    });
+});
+</script>
+{% endblock %}

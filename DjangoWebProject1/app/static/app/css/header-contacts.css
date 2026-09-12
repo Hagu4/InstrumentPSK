@@ -1,0 +1,41 @@
+.header-right-side {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-left: auto;
+}
+
+.header-contacts {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.contact-info {
+    text-align: right;
+}
+
+.phone-number {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--theme-accent-primary);
+    text-decoration: none;
+    display: block;
+    white-space: nowrap;
+}
+
+.phone-number:hover {
+    color: var(--theme-accent-primary-hover);
+}
+
+.working-hours {
+    font-size: 15px;
+    color: var(--theme-text-secondary);
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.user-actions {
+    display: flex;
+    align-items: center;
+}

@@ -1,0 +1,121 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% block content %}
+<div class="legal-page">
+    <div class="container">
+        <h1>Политика конфиденциальности</h1>
+        <p class="last-updated">Последнее обновление: {% now "d.m.Y" %}</p>
+        
+        <div class="legal-content">
+            <section>
+                <h2>1. Общие положения</h2>
+                <p>Настоящая Политика конфиденциальности (далее — Политика) определяет порядок обработки и защиты персональных данных пользователей сайта "InstrumentPSK" (далее — Сайт).</p>
+                <p>Оператором персональных данных является ИП "InstrumentPSK", расположенное по адресу: г. Псков, ул. Звездная, д.3.</p>
+            </section>
+
+            <section>
+                <h2>2. Сбор персональных данных</h2>
+                <p>Мы собираем следующие персональные данные:</p>
+                <ul>
+                    <li>Имя и фамилия</li>
+                    <li>Адрес электронной почты</li>
+                    <li>Номер телефона</li>
+                    <li>Адрес доставки</li>
+                    <li>История заказов</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>3. Цели обработки данных</h2>
+                <p>Персональные данные используются для:</p>
+                <ul>
+                    <li>Оформления и доставки заказов</li>
+                    <li>Связи с покупателем</li>
+                    <li>Информирования о статусе заказа</li>
+                    <li>Улучшения качества обслуживания</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>4. Защита данных</h2>
+                <p>Мы принимаем все необходимые технические и организационные меры для защиты ваших персональных данных от несанкционированного доступа, изменения или удаления.</p>
+            </section>
+
+            <section>
+                <h2>5. Файлы cookie</h2>
+                <p>Сайт использует файлы cookie для улучшения работы сервиса и анализа посещаемости. Вы можете отключить использование cookie в настройках браузера.</p>
+            </section>
+
+            <section>
+                <h2>6. Передача данных третьим лицам</h2>
+                <p>Мы не передаём ваши персональные данные третьим лицам, за исключением случаев, предусмотренных законодательством РФ.</p>
+            </section>
+
+            <section>
+                <h2>7. Ваши права</h2>
+                <p>Вы имеете право:</p>
+                <ul>
+                    <li>Получить информацию о ваших персональных данных</li>
+                    <li>Требовать исправления неточных данных</li>
+                    <li>Требовать удаления ваших данных</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>8. Контакты</h2>
+                <p>По вопросам, связанным с обработкой персональных данных, обращайтесь:</p>
+                <p>Email: <a href="mailto:info@instrumentpsk.ru">info@instrumentpsk.ru</a><br>
+                Телефон: 8 (812) 123-45-67</p>
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+    .legal-page {
+        padding: 40px 0;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .legal-page h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+        color: var(--theme-text-primary);
+    }
+    
+    .last-updated {
+        color: var(--theme-text-muted);
+        margin-bottom: 30px;
+    }
+    
+    .legal-content section {
+        margin-bottom: 30px;
+    }
+    
+    .legal-content h2 {
+        font-size: 20px;
+        margin-bottom: 15px;
+        color: var(--theme-text-primary);
+    }
+    
+    .legal-content p {
+        color: var(--theme-text-secondary);
+        line-height: 1.7;
+        margin-bottom: 10px;
+    }
+    
+    .legal-content ul {
+        color: var(--theme-text-secondary);
+        padding-left: 20px;
+    }
+    
+    .legal-content li {
+        margin-bottom: 8px;
+    }
+    
+    .legal-content a {
+        color: var(--theme-accent-primary);
+    }
+</style>
+{% endblock %}

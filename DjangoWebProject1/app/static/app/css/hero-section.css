@@ -1,0 +1,224 @@
+/* ── HERO ── */
+.hero-section { /* Renamed from .hero to .hero-section for consistency */
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 120px 40px 80px;
+  overflow: hidden;
+  background-color: var(--theme-bg); /* Ensure it uses theme background */
+  color: var(--theme-text-primary); /* Ensure text uses theme primary color */
+}
+.hero-section::before { /* Renamed from .hero::before */
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 900px;
+  height: 900px;
+  background: radial-gradient(circle, rgba(var(--theme-accent-primary-rgb),0.08) 0%, transparent 70%); /* Adapted to theme variable */
+  border-radius: 50%;
+  pointer-events: none;
+}
+/* Hero particles - HTML is in layout.html, CSS is here */
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.spark {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--theme-accent-primary); /* Adapted to theme variable */
+  border-radius: 50%;
+  opacity: 0;
+  animation: sparkFloat linear infinite;
+}
+ @keyframes sparkFloat {
+  0% { opacity: 0; transform: translateY(0) scale(0); }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.1; }
+  100% { opacity: 0; transform: translateY(-100vh) scale(1); }
+}
+.hero-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+@media (max-width: 992px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    text-align: center;
+  }
+  .hero-text p {
+    margin: 0 auto 40px;
+  }
+  .hero-cta {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-text h1 {
+    font-size: clamp(36px, 8vw, 48px);
+  }
+  .hero-section {
+    padding: 120px 20px 60px;
+  }
+  .hero-cta {
+    flex-direction: column;
+    width: 100%;
+  }
+  .hero-cta .btn {
+    width: 100%;
+  }
+}
+.hero-text h1 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 6vw, 80px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+  color: var(--theme-white); /* Adapted to theme variable */
+  margin-bottom: 24px;
+}
+.hero-text h1 span {
+  color: var(--theme-accent-primary); /* Adapted to theme variable */
+  display: inline-block;
+  position: relative;
+}
+.hero-text h1 span::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--theme-accent-primary); /* Adapted to theme variable */
+  opacity: 0.3;
+}
+/* Typing effect for hero subtitle */
+.hero-text p {
+  font-size: 18px;
+  color: var(--theme-text-secondary); /* Adapted to theme variable */
+  max-width: 480px;
+  margin-bottom: 40px;
+  line-height: 1.7;
+}
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+/* Buttons are already styled in styles.css and use theme variables */
+/* Hero Visual */
+.hero-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-badge {
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  border: 2px solid var(--theme-border); /* Adapted to theme variable */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: slowPulse 6s ease-in-out infinite;
+}
+/* Rotating ring around badge */
+.hero-badge::before {
+  content: '';
+  position: absolute;
+  inset: -15px;
+  border-radius: 50%;
+  border: 1px dashed rgba(var(--theme-accent-primary-rgb),0.2); /* Adapted to theme variable */
+  animation: rotateSlow 40s linear infinite;
+}
+.hero-badge::after {
+  content: '';
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  border: 1px dashed rgba(var(--theme-accent-primary-rgb),0.08); /* Adapted to theme variable */
+  animation: rotateSlow 60s linear infinite reverse;
+}
+ @keyframes rotateSlow { to { transform: rotate(360deg); } }
+ @keyframes slowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--theme-accent-primary-rgb),0); } /* Adapted to theme variable */
+  50% { box-shadow: 0 0 0 20px rgba(var(--theme-accent-primary-rgb),0.05); } /* Adapted to theme variable */
+}
+.hero-badge-inner {
+  font-family: var(--font-display);
+  text-align: center;
+  padding: 40px;
+}
+.hero-badge-inner .big-num {
+  font-size: 96px;
+  font-weight: 700;
+  color: var(--theme-accent-primary); /* Adapted to theme variable */
+  line-height: 1;
+}
+.hero-badge-inner .big-label {
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--theme-text-secondary); /* Adapted to theme variable */
+  margin-top: 8px;
+}
+.hero-badge-inner .big-sub {
+  font-size: 13px;
+  color: var(--theme-metal); /* Adapted to theme variable */
+  margin-top: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.hero-stats {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 32px;
+  background: var(--theme-surface); /* Adapted to theme variable */
+  border: 1px solid var(--theme-border); /* Adapted to theme variable */
+  border-radius: 8px;
+  padding: 16px 32px;
+  white-space: nowrap;
+}
+.hero-stat { text-align: center; }
+.hero-stat .num {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--theme-accent-primary); /* Adapted to theme variable */
+}
+.hero-stat .label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--theme-text-secondary); /* Adapted to theme variable */
+  margin-top: 2px;
+}
+
+/* Responsive adjustments */
+ @media (max-width: 1024px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+  .hero-visual { display: none; }
+}
+ @media (max-width: 768px) {
+  .hero-section { padding: 100px 20px 60px; }
+}

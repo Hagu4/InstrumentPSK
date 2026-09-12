@@ -1,0 +1,564 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load auth_extras %}
+
+{% block content %}
+
+<style>
+/* Reset and Base Styles */
+.order-management-page {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #F8F9FA;
+    color: #2C3E50;
+}
+
+/* User-Provided CSS Classes + Enhancements */
+
+/* 1. Dashboard */
+.stats-dashboard { 
+  background: linear-gradient(90deg, #FFFFFF 0%, #E9ECEF 100%);
+  padding: 18px 25px; 
+  border-bottom: 4px solid #F39C12; 
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+}
+.stat-item { 
+  font-weight: 600; 
+  color: #2C3E50; 
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.stat-item .value { font-size: 1.3rem; color: #2C3E50; }
+.stat-item .icon { font-size: 1.5rem; color: #F39C12; }
+.dashboard-filters { display: flex; gap: 8px; }
+.dashboard-filters .btn {
+    border: none; font-weight: 600; border-radius: 8px;
+    background: transparent; color: #2C3E50; padding: 8px 12px;
+}
+.dashboard-filters .btn.active { background: #F39C12; color: #FFFFFF; }
+
+/* 2. Order Statuses */
+.order-status { 
+  padding: 5px 12px; border-radius: 20px; font-size: 12px; 
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  min-width: 110px; text-align: center; display: inline-block; white-space: nowrap;
+}
+.status-new, .status-cancelled { background: #E74C3C; color: #FFFFFF; }
+.status-processed { background: #27AE60; color: #FFFFFF; }
+.status-shipped { background: #3498DB; color: #FFFFFF; }
+.status-awaiting { background: #F39C12; color: #FFFFFF; }
+.status-other { background: #6c757d; color: #FFFFFF; }
+
+/* 3. Bulk Actions */
+.bulk-actions {
+  background: #FFFFFF; padding: 16px; border-top: 3px solid #F39C12;
+  display: none; gap: 16px; align-items: center; position: fixed;
+  bottom: 0; left: 0; width: 100%;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 999;
+  justify-content: center; flex-wrap: wrap;
+}
+
+/* STYLES FOR ACTION DROPDOWN */
+.action-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.action-dropdown .btn-details {
+    background-color: #fff; border: 1px solid #dee2e6; color: #495057;
+    border-radius: 8px; padding: .5rem .75rem;
+}
+/* New button style for the dropdown toggle */
+.action-dropdown .btn-status-toggle {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #fff;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: .5rem .75rem;
+}
+.action-dropdown .btn-status-toggle:hover, 
+.action-dropdown .btn-status-toggle:focus,
+.action-dropdown .open > .dropdown-toggle.btn-status-toggle {
+    background-color: #5a6268;
+    border-color: #545b62;
+    color: #fff;
+}
+.action-dropdown .dropdown-menu {
+    border-radius: 8px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 1px solid #E9ECEF;
+}
+/* Style for dropdown items with icons */
+.action-dropdown .dropdown-item {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+}
+.action-dropdown .dropdown-item .status-icon {
+    width: 20px;
+    text-align: center;
+    color: #888;
+}
+.action-dropdown .dropdown-item:hover {
+    background-color: #F39C12;
+    color: #fff;
+}
+.action-dropdown .dropdown-item:hover .status-icon {
+    color: #fff;
+}
+
+/* New styles for Bulk Actions Dropdown */
+.bulk-actions .dropdown-menu {
+    min-width: 250px; /* Make the dropdown wider */
+    padding: 5px 0;
+}
+.bulk-actions .dropdown-item {
+    font-size: 1.1em; /* Larger text */
+    padding: 10px 15px; /* More padding */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.bulk-actions .dropdown-item .status-icon {
+    width: 24px; /* Slightly larger icon space */
+    text-align: center;
+    color: #6C757D; /* Default icon color */
+}
+.bulk-actions .dropdown-item:hover .status-icon {
+    color: #fff; /* White icon on hover */
+}
+
+
+/* 5. Payment/Shipping Icons */
+.payment-icon, .shipping-icon { 
+    font-size: 18px; margin-right: 5px; vertical-align: middle;
+}
+.icon-paid { color: #27AE60; }
+.icon-unpaid { color: #F39C12; }
+.icon-shipped { color: #3498DB; }
+.icon-pending-shipment, .icon-pickup { color: #2C3E50; }
+
+/* Responsive Table & Cards */
+.order-table-container {
+    overflow-x: auto; margin-bottom: 20px; background-color: #FFFFFF;
+    border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+.order-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    min-width: 900px;
+}
+.order-table th {
+    padding: 15px; text-align: left; font-weight: 700; color: #2C3E50;
+    border-bottom: 3px solid #E9ECEF; position: sticky; top: 0; z-index: 1; background: #FFF;
+}
+.order-table td {
+    padding: 15px; vertical-align: middle;
+    border-bottom: 1px solid #E9ECEF;
+}
+.order-table tbody tr:hover td { background-color: #F8F9FA; }
+.client-name { font-weight: 600; }
+.order-total { font-weight: 700; font-size: 1.1rem; white-space: nowrap; }
+.order-cards-mobile { display: none; }
+
+/* Checkbox styles */
+.form-check-input {
+    width: 1.3em; height: 1.3em; cursor: pointer;
+    vertical-align: middle; margin-right: 5px;
+}
+
+/* Search Card styling update */
+.search-card {
+    background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 1rem; margin-bottom: 25px; border: 1px solid #E9ECEF;
+}
+.search-card .input-group { display: flex; border: 1px solid #ced4da; border-radius: 8px; overflow: hidden; }
+.search-card .form-control { border: none; box-shadow: none; padding: 0.75rem 1rem; flex-grow: 1; }
+.search-card .btn {
+    background-color: #F39C12; color: #FFFFFF; border: none;
+    padding: 0.75rem 1rem; cursor: pointer; transition: background-color 0.2s;
+}
+.search-card .btn:hover { background-color: #e08e00; }
+.search-card .glyphicon-search::before {
+    font-family: "Font Awesome 5 Free"; font-weight: 900; content: "\f002";
+}
+
+@media (min-width: 1201px) {
+    .order-table-container { display: block; }
+    .order-cards-mobile { display: none; }
+}
+
+@media (max-width: 1200px) {
+    .order-table-container { display: none; }
+    .order-cards-mobile { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+    .order-card {
+        background: #FFFFFF; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        padding: 15px; border: 1px solid #E9ECEF;
+    }
+    .card-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid #E9ECEF;
+    }
+    .card-header .order-id { font-weight: 700; font-size: 1.1rem; }
+    .card-item { display: grid; grid-template-columns: 100px 1fr; gap: 10px; align-items: center; }
+    .card-label { font-weight: 600; color: #888; font-size: 0.9rem; }
+    .card-footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid #E9ECEF; }
+    .stats-dashboard { flex-direction: column; gap: 15px; align-items: stretch; }
+    .dashboard-filters { justify-content: center; }
+}
+</style>
+
+<div class="order-management-page container mt-4 mb-4">
+    <!-- 1. DASHBOARD -->
+    <div class="stats-dashboard">
+        <div class="stat-item">
+            <span><i class="fas fa-chart-line" style="color:#F39C12"></i> За сегодня:</span>
+            <span class="value">{{ stats.today_new }} новых</span> |
+            <span class="value">{{ stats.today_processed }} обработано</span> |
+            <span class="value">{{ stats.today_revenue|floatformat:"0" }} ₽</span> |
+            <span class="value" style="color: #E74C3C;"><i class="fas fa-clock"></i> {{ stats.urgent_count }} срочно</span>
+        </div>
+        <div class="dashboard-filters">
+            <a href="?filter=all" class="btn {% if active_filter == 'all' %}active{% endif %}">Все</a>
+            <a href="?filter=processed" class="btn {% if active_filter == 'processed' %}active{% endif %}">Обработанные</a>
+        </div>
+    </div>
+    
+    <!-- Search Card -->
+    <div class="search-card">
+        <form method="get">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Поиск по номеру заказа, клиенту..." value="{{ search_query }}">
+                <button class="btn" type="submit"><i class="fas fa-search"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <h3>Управление заказами</h3>
+
+    {% if orders_with_transitions %}
+    <!-- DESKTOP TABLE -->
+    <div class="order-table-container">
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th><input class="form-check-input" type="checkbox" id="select-all-orders"></th>
+                    <th>№</th>
+                    <th>Клиент</th>
+                    <th>Статус</th>
+                    <th>Оплата</th>
+                    <th>Получение</th>
+                    <th>Дата</th>
+                    <th>Сумма</th>
+                    <th class="text-center" style="width: 250px;">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in orders_with_transitions %}
+                <tr>
+                    <td><input class="form-check-input order-checkbox" type="checkbox" data-id="{{ item.order.id }}"></td>
+                    <td><a href="{% url 'order_detail' item.order.id %}">#{{ item.order.id }}</a></td>
+                    <td class="client-name">{{ item.order.user.username }}</td>
+                    <td>
+                        <span class="order-status 
+                            {% if item.order.status == 'COMPLETED' %}status-processed
+                            {% elif item.order.status == 'CANCELLED' %}status-cancelled
+                            {% elif item.order.status == 'READY_FOR_PICKUP' %}status-shipped
+                            {% elif item.order.status == 'ASSEMBLING' %}status-awaiting
+                            {% else %}status-new{% endif %}">
+                            {% if item.order.status == 'CANCELLED' %}
+                                {% if item.order.cancelled_by_user %}
+                                    Отменен пользователем
+                                {% else %}
+                                    Отменен
+                                {% endif %}
+                            {% else %}
+                                {{ item.order.get_status_display }}
+                            {% endif %}
+                        </span>
+                        
+                        {# Pre-order warning for manager #}
+                        {% for order_item in item.order.items.all %}
+                            {% if order_item.is_preorder %}
+                                {% if forloop.first %}
+                                <div style="margin-top: 5px;">
+                                    <span class="badge" style="background-color: #3b82f6; color: white; font-size: 10px; padding: 3px 8px; border-radius: 4px;">
+                                        <i class="fas fa-clock"></i> ПОД ЗАКАЗ
+                                    </span>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if item.order.status == 'COMPLETED' %}
+                            <i class="fas fa-check-circle payment-icon icon-paid" title="Оплачено"></i>
+                        {% else %}
+                            <i class="fas fa-clock payment-icon icon-unpaid" title="Оплата при получении"></i> 
+                        {% endif %}
+                        {{ PAYMENT_CHOICES|get_item:item.order.payment_method }}
+                    </td>
+                    <td>
+                        <i class="fas fa-store shipping-icon icon-pickup" title="Самовывоз"></i>
+                        {{ DELIVERY_CHOICES|get_item:item.order.delivery_method }}
+                    </td>
+                    <td>{{ item.order.order_date|default:item.order.created_at|date:"d.m.Y" }}</td>
+                    <td class="order-total">{{ item.order.total_price|floatformat:"0" }} ₽</td>
+                    <td class="text-center">
+                        {% if item.allowed_statuses %}
+                        <div class="action-dropdown dropdown d-grid gap-2">
+                            <button class="btn btn-sm btn-status-toggle dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                                Сменить статус
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% for code, name in item.allowed_statuses %}
+                                <li>
+                                    <a class="dropdown-item status-change-btn" href="#" data-order-id="{{ item.order.id }}" data-status-code="{{ code }}">
+                                        {% if code == 'ASSEMBLING' %}<i class="fas fa-box-open status-icon"></i>
+                                        {% elif code == 'AWAITING_PAYMENT' %}<i class="fas fa-wallet status-icon"></i>
+                                        {% elif code == 'PAID' %}<i class="fas fa-check-circle status-icon"></i>
+                                        {% elif code == 'SHIPPED' %}<i class="fas fa-truck status-icon"></i>
+                                        {% elif code == 'DELIVERING' %}<i class="fas fa-shipping-fast status-icon"></i>
+                                        {% elif code == 'AWAITING_PICKUP' %}<i class="fas fa-store status-icon"></i>
+                                        {% elif code == 'COMPLETED' %}<i class="fas fa-star status-icon"></i>
+                                        {% elif code == 'CANCELLED' %}<i class="fas fa-times-circle status-icon"></i>
+                                        {% elif code == 'DEFECT_RETURN' %}<i class="fas fa-undo status-icon"></i>
+                                        {% else %}<i class="fas fa-question-circle status-icon"></i>{% endif %}
+                                        <span>{{ name }}</span>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <form method="post" id="status-form-{{ item.order.id }}" class="d-none">
+                            {% csrf_token %}
+                            <input type="hidden" name="order_id" value="{{ item.order.id }}">
+                            <input type="hidden" name="new_status" id="new-status-input-{{ item.order.id }}">
+                        </form>
+                        {% else %}
+                            <p class="text-muted mb-0">Нет действий</p>
+                        {% endif %}
+                    </td>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MOBILE CARDS -->
+    <div class="order-cards-mobile">
+        {% for item in orders_with_transitions %}
+        <div class="order-card">
+            <div class="card-header">
+                <span class="order-id"><a href="{% url 'order_detail' item.order.id %}">#{{ item.order.id }}</a></span>
+                <input class="form-check-input order-checkbox" type="checkbox" data-id="{{ item.order.id }}">
+            </div>
+            <div class="card-item">
+                <span class="card-label">Клиент:</span>
+                <span class="client-name">{{ item.order.user.username }}</span>
+            </div>
+            <div class="card-item">
+                <span class="card-label">Статус:</span>
+                <div>
+                     <span class="order-status 
+                        {% if item.order.status == 'PAID' or item.order.status == 'COMPLETED' %}status-processed
+                        {% elif item.order.status == 'CANCELLED' or item.order.status == 'DEFECT_RETURN' %}status-cancelled
+                        {% elif item.order.status == 'SHIPPED' or item.order.status == 'DELIVERING' %}status-shipped
+                        {% elif item.order.status == 'AWAITING_PAYMENT' or item.order.status == 'AWAITING_PICKUP' %}status-awaiting
+                        {% else %}status-new{% endif %}">
+                        {% if item.order.status == 'CANCELLED' %}
+                            {% if item.order.cancelled_by_user %}
+                                Отменен пользователем
+                            {% else %}
+                                Отменен
+                            {% endif %}
+                        {% else %}
+                            {{ item.order.get_status_display }}
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="card-item">
+                <span class="card-label">Сумма:</span>
+                <span class="order-total">{{ item.order.total_price|floatformat:"0" }} ₽</span>
+            </div>
+            <div class="card-footer">
+                 {% if item.allowed_statuses %}
+                 <div class="action-dropdown dropdown d-grid gap-2">
+                    <button class="btn btn-sm btn-status-toggle dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                        Сменить статус
+                    </button>
+                    <ul class="dropdown-menu">
+                         {% for code, name in item.allowed_statuses %}
+                         <li>
+                             <a class="dropdown-item status-change-btn" href="#" data-order-id="{{ item.order.id }}" data-status-code="{{ code }}">
+                                 {% if code == 'ASSEMBLING' %}<i class="fas fa-box-open status-icon"></i>
+                                 {% elif code == 'AWAITING_PAYMENT' %}<i class="fas fa-wallet status-icon"></i>
+                                 {% elif code == 'PAID' %}<i class="fas fa-check-circle status-icon"></i>
+                                 {% elif code == 'SHIPPED' %}<i class="fas fa-truck status-icon"></i>
+                                 {% elif code == 'DELIVERING' %}<i class="fas fa-shipping-fast status-icon"></i>
+                                 {% elif code == 'AWAITING_PICKUP' %}<i class="fas fa-store status-icon"></i>
+                                 {% elif code == 'COMPLETED' %}<i class="fas fa-star status-icon"></i>
+                                 {% elif code == 'CANCELLED' %}<i class="fas fa-times-circle status-icon"></i>
+                                 {% elif code == 'DEFECT_RETURN' %}<i class="fas fa-undo status-icon"></i>
+                                 {% else %}<i class="fas fa-question-circle status-icon"></i>{% endif %}
+                                 <span>{{ name }}</span>
+                             </a>
+                         </li>
+                         {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="text-center p-5 bg-light rounded" style="margin-top: 20px; background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <i class="fas fa-inbox" style="font-size: 48px; color: #ccc;"></i>
+        <h4 class="mt-3">Нет заказов для отображения</h4>
+        <p class="text-muted">
+            {% if search_query %}
+            По вашему запросу "{{ search_query }}" ничего не найдено.
+            {% else %}
+            Когда появятся новые заказы, они будут отображены здесь.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Hidden form for bulk actions -->
+    <form id="bulk-action-form" method="post" class="d-none">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" id="bulk-action-input">
+        <input type="hidden" name="order_ids" id="bulk-order-ids-input">
+    </form>
+
+    <!-- BULK ACTIONS BAR -->
+    <div class="bulk-actions" id="bulk-actions-bar">
+        <strong id="selected-count">Выбрано: 0</strong>
+        <div class="dropdown dropup">
+            <button class="btn btn-sm btn-status-toggle dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                Применить к выделенным
+            </button>
+                                        <ul class="dropdown-menu">
+                                            {% for code, name in all_statuses %}
+                                                {% if code != 'CART' %}
+                                                <li>
+                                                    <a class="dropdown-item bulk-action-item" href="#" data-action="{{ code }}">
+                                                        {% if code == 'ASSEMBLING' %}<i class="fas fa-box-open status-icon"></i>
+                                                        {% elif code == 'AWAITING_PAYMENT' %}<i class="fas fa-wallet status-icon"></i>
+                                                        {% elif code == 'PAID' %}<i class="fas fa-check-circle status-icon"></i>
+                                                        {% elif code == 'SHIPPED' %}<i class="fas fa-truck status-icon"></i>
+                                                        {% elif code == 'DELIVERING' %}<i class="fas fa-shipping-fast status-icon"></i>
+                                                        {% elif code == 'AWAITING_PICKUP' %}<i class="fas fa-store status-icon"></i>
+                                                        {% elif code == 'ARRIVED' %}<i class="fas fa-map-marker-alt status-icon"></i> {# Added for 'ARRIVED' #}
+                                                        {% elif code == 'COMPLETED' %}<i class="fas fa-star status-icon"></i>
+                                                        {% elif code == 'CANCELLED' %}<i class="fas fa-times-circle status-icon"></i>
+                                                        {% elif code == 'DEFECT_RETURN' %}<i class="fas fa-undo status-icon"></i>
+                                                        {% else %}<i class="fas fa-question-circle status-icon"></i>{% endif %}
+                                                        <span>{{ name }}</span>
+                                                    </a>
+                                                </li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </ul>        </div>
+        <button class="btn btn-success" id="apply-bulk-action">Применить</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    // --- Checkbox & Bulk Actions Bar Logic ---
+    const selectAllCheckbox = $('#select-all-orders');
+    const orderCheckboxes = $('.order-checkbox');
+    const bulkActionsBar = $('#bulk-actions-bar');
+    const selectedCountSpan = $('#selected-count');
+
+    function updateBulkActionsBar() {
+        const checkedCount = $('.order-checkbox:checked').length;
+        if (checkedCount > 0) {
+            selectedCountSpan.text('Выбрано: ' + checkedCount);
+            bulkActionsBar.css('display', 'flex');
+        } else {
+            bulkActionsBar.hide();
+        }
+        selectAllCheckbox.prop('checked', checkedCount > 0 && checkedCount === orderCheckboxes.length);
+    }
+
+    selectAllCheckbox.on('change', function() {
+        orderCheckboxes.prop('checked', $(this).prop('checked')).trigger('change');
+    });
+
+    orderCheckboxes.on('change', function() {
+        updateBulkActionsBar();
+    });
+
+    updateBulkActionsBar(); // Initial run
+
+    // --- Individual Status Change Logic ---
+    $('.status-change-btn').on('click', function(e) {
+        e.preventDefault();
+        
+        const orderId = $(this).data('order-id');
+        const newStatusCode = $(this).data('status-code');
+        
+        $('#new-status-input-' + orderId).val(newStatusCode);
+        $('#status-form-' + orderId).submit();
+    });
+
+    // --- NEW: Bulk Action Submission Logic ---
+    let selectedBulkAction = null;
+    let selectedBulkActionText = "Применить к выделенным"; // Default text
+
+    $('.bulk-action-item').on('click', function(e) {
+        e.preventDefault();
+        selectedBulkAction = $(this).data('action');
+        selectedBulkActionText = $(this).text();
+        
+        // Update the dropdown toggle button text to show the selected action
+        $('#bulk-actions-bar .dropdown-toggle').text(selectedBulkActionText.trim());
+    });
+
+    $('#apply-bulk-action').on('click', function() {
+        if (!selectedBulkAction || selectedBulkAction === 'call') {
+            if (selectedBulkAction === 'call') {
+                alert('Действие "Позвонить всем" не является сменой статуса и в данный момент не поддерживается.');
+            } else {
+                alert('Пожалуйста, выберите действие из выпадающего списка (например, "Обработать все").');
+            }
+            return;
+        }
+
+        const selectedOrderIds = $('.order-checkbox:checked').map(function() {
+            return $(this).data('id');
+        }).get();
+
+        if (selectedOrderIds.length === 0) {
+            alert('Пожалуйста, выберите хотя бы один заказ.');
+            return;
+        }
+
+        // Populate and submit the hidden form
+        $('#bulk-action-input').val(selectedBulkAction);
+        $('#bulk-order-ids-input').val(selectedOrderIds.join(','));
+        $('#bulk-action-form').submit();
+    });
+});
+</script>
+{% endblock %}

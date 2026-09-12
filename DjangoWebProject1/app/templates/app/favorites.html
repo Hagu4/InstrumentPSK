@@ -1,0 +1,68 @@
+{% extends "app/profile_base.html" %}
+{% load static %}
+
+{% block profile_content %}
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/catalog_redesign.css' %}" />
+
+<div class="profile-content-wrapper">
+    <h2>Избранные товары</h2>
+
+    {% if products %}
+        <div class="product-grid mt-4">
+            {% for product in products %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm product-card-hover">
+                        
+                        {# Favorite button will be added here later #}
+                        
+                        <a href="{% url 'product_detail' product.id %}" class="text-decoration-none text-dark">
+                            <div class="product-card-image-wrapper">
+                                {% if product.images.first %}
+                                    <img src="{{ product.images.first.image.url }}" class="product-image" alt="{{ product.title }}">
+                                {% else %}
+                                    <img src="{% static 'app/content/logo.png' %}" class="product-image" alt="Нет изображения" style="opacity: 0.5;">
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ product.title }}</h5>
+                                {% if product.category %}
+                                    <p class="card-text text-muted small">{{ product.category.name }}</p>
+                                {% endif %}
+                                <h4 class="card-price">{{ product.price }} ₽</h4>
+                                <div class="stock-status">
+                                    {% if product.quantity > 0 %}
+                                        <span class="in-stock">В наличии</span>
+                                    {% else %}
+                                        <span class="out-of-stock" style="color: #3b82f6;">Под заказ</span>
+                                    {% endif %}
+                                    </div>
+                                    </div>
+                                    </a>
+                                    <div class="card-footer bg-transparent border-top-0">
+                                    <form method="post" action="{% url 'cart' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    {% if product.quantity > 0 %}
+                                    <button type="submit" name="add_to_cart" class="btn btn-primary btn-block w-100"><i class="fas fa-shopping-cart"></i> В корзину</button>
+                                    {% else %}
+                                    <button type="submit" name="add_to_cart" class="btn btn-primary btn-block w-100" style="background-color: #3b82f6; border-color: #3b82f6;"><i class="fas fa-clock"></i> Под заказ</button>
+                                    {% endif %}
+                                    </form>
+                                    </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state" style="text-align: center; padding: 4rem 1rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">
+                <i class="far fa-heart"></i>
+            </div>
+            <h4 style="color: #6c757d; margin-bottom: 0.5rem;">Избранное пусто</h4>
+            <p style="color: #999; margin-bottom: 1.5rem;">Добавляйте товары в избранное, чтобы не потерять их</p>
+            <a href="{% url 'catalog' %}" class="btn btn-primary">Перейти в каталог</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
