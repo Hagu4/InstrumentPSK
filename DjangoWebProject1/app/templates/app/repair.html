@@ -1,0 +1,215 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block styles %}
+<style>
+    .info-page { max-width: 1400px; margin: 3rem auto; padding: 0 1rem; }
+    .info-header { text-align: center; margin-bottom: 3rem; }
+    .info-header h1 { font-size: 3.5rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem; }
+    .info-header p { font-size: 1.6rem; color: #64748B; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+    
+    .status-banner {
+        background: #fff8f4;
+        border: 2px dashed #fbd38d;
+        border-radius: 16px;
+        padding: 3.5rem 3rem;
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    .status-banner h2 {
+        font-size: 1.6rem;
+        color: #9a3412;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .status-banner p {
+        font-size: 1.15rem;
+        color: #c2410c;
+        max-width: 1000px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .service-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        padding: 3rem;
+        border: 1px solid #f1f5f9;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .service-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+    
+    .service-icon {
+        width: 70px;
+        height: 70px;
+        background: #f0fdf4;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #10b981;
+        font-size: 3rem;
+        margin: 0 auto 1.5rem auto;
+    }
+    
+    .service-card h3 {
+        font-size: 1.3rem;
+        color: #0f172a;
+        margin: 0 0 1rem 0;
+        font-weight: 700;
+    }
+    
+    .service-card p {
+        font-size: 1rem;
+        color: #475569;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .price-table-container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+
+    .price-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .price-table th {
+        background: #f8fafc;
+        padding: 1.8rem 2.5rem;
+        text-align: left;
+        font-weight: 700;
+        color: #334155;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .price-table td {
+        padding: 1.8rem 2.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #475569;
+        font-size: 1.5rem;
+    }
+
+    .price-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .price-table tr:hover td {
+        background: #f8fafc;
+    }
+
+    .price-table td.price {
+        font-weight: 700;
+        color: #FF6B00;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 992px) {
+        .services-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+        .services-grid { grid-template-columns: 1fr; }
+        .price-table th, .price-table td { padding: 1rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="info-page">
+    <div class="info-header">
+        <h1>Ремонт и обслуживание</h1>
+        <p>Качественный гарантийный и постгарантийный ремонт вашего электро- и бензоинструмента</p>
+    </div>
+
+    <div class="status-banner">
+        <h2><i class="fas fa-exclamation-triangle"></i> Внимание!</h2>
+        <p>Прием инструмента на диагностику и ремонт осуществляется <strong>исключительно при личном визите</strong> в наш сервисный центр. Пожалуйста, приносите инструмент в чистом виде по адресу: г. Псков, ул. Звездная, д. 3.</p>
+    </div>
+
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-icon"><i class="fas fa-search"></i></div>
+            <h3>Диагностика</h3>
+            <p>Выявляем точные причины поломки, проверяем износ узлов и агрегатов, согласовываем с вами стоимость до начала работ.</p>
+        </div>
+        
+        <div class="service-card">
+            <div class="service-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-tools"></i></div>
+            <h3>Ремонт любой сложности</h3>
+            <p>Ремонтируем перфораторы, болгарки, бензопилы, триммеры, генераторы и другую технику. Используем оригинальные запчасти.</p>
+        </div>
+
+        <div class="service-card">
+            <div class="service-icon" style="background: #fdf4ff; color: #d946ef;"><i class="fas fa-oil-can"></i></div>
+            <h3>Техническое обслуживание</h3>
+            <p>Замена масла, фильтров, свечей, смазка редукторов, заточка цепей и предсезонная подготовка садовой техники.</p>
+        </div>
+    </div>
+
+    <h2 style="text-align: center; font-size: 3rem; font-weight: 800; color: #0f172a; margin-top: 4rem; margin-bottom: 2rem;">Ориентировочные цены на работы</h2>
+    
+    <div class="price-table-container">
+        <table class="price-table">
+            <thead>
+                <tr>
+                    <th>Наименование услуги</th>
+                    <th style="text-align: right;">Стоимость (от)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Диагностика электроинструмента (при отказе от ремонта)</td>
+                    <td class="price">300 ₽</td>
+                </tr>
+                <tr>
+                    <td>Диагностика бензоинструмента (при отказе от ремонта)</td>
+                    <td class="price">500 ₽</td>
+                </tr>
+                <tr>
+                    <td>Замена графитовых щеток (без стоимости запчастей)</td>
+                    <td class="price">400 ₽</td>
+                </tr>
+                <tr>
+                    <td>Замена сетевого кабеля, выключателя</td>
+                    <td class="price">400 ₽</td>
+                </tr>
+                <tr>
+                    <td>Техническое обслуживание бензопилы/триммера (ТО)</td>
+                    <td class="price">1200 ₽</td>
+                </tr>
+                <tr>
+                    <td>Замена подшипников ротора/статора</td>
+                    <td class="price">800 ₽</td>
+                </tr>
+                <tr>
+                    <td>Ремонт/замена редуктора УШМ, перфоратора</td>
+                    <td class="price">1000 ₽</td>
+                </tr>
+                <tr>
+                    <td>Заточка пильной цепи</td>
+                    <td class="price">250 ₽</td>
+                </tr>
+            </tbody>
+        </table>
+        <div style="padding: 1.5rem; background: #f8fafc; text-align: center; color: #64748B; font-size: 1.2rem;">
+            *Указаны базовые цены за работу мастера. Точная стоимость рассчитывается после диагностики с учетом цен на заменяемые запчасти.
+        </div>
+    </div>
+</div>
+{% endblock %}

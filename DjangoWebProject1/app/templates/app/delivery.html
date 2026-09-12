@@ -1,0 +1,138 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block styles %}
+<style>
+    .info-page { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
+    .info-header { text-align: center; margin-bottom: 3rem; }
+    .info-header h1 { font-size: 2.5rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem; }
+    .info-header p { font-size: 1.2rem; color: #64748B; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+    
+    .status-banner {
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 3rem 2rem;
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    .status-icon {
+        font-size: 4rem;
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+    }
+    .status-banner h2 {
+        font-size: 1.8rem;
+        color: #334155;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    .status-banner p {
+        font-size: 1.2rem;
+        color: #64748B;
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .pickup-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        padding: 2.5rem;
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+        border: 1px solid #f1f5f9;
+        position: relative;
+        overflow: hidden;
+    }
+    .pickup-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; bottom: 0;
+        width: 8px;
+        background: #FF6B00;
+    }
+    .pickup-icon {
+        width: 80px;
+        height: 80px;
+        background: #fff7ed;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #FF6B00;
+        font-size: 2.5rem;
+        flex-shrink: 0;
+    }
+    .pickup-content h3 {
+        font-size: 1.6rem;
+        color: #0f172a;
+        margin: 0 0 1rem 0;
+        font-weight: 700;
+    }
+    .pickup-details {
+        display: grid;
+        gap: 0.75rem;
+    }
+    .pickup-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 1.1rem;
+        color: #475569;
+    }
+    .pickup-row i {
+        color: #FF6B00;
+        margin-top: 4px;
+        width: 20px;
+        text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+        .pickup-card { flex-direction: column; text-align: center; padding: 2rem; }
+        .pickup-row { justify-content: center; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="info-page">
+    <div class="info-header">
+        <h1>Получение заказа</h1>
+        <p>Информация о способах получения заказов в нашем магазине</p>
+    </div>
+
+    <div class="status-banner">
+        <div class="status-icon"><i class="fas fa-truck-loading"></i></div>
+        <h2>Курьерская доставка в разработке</h2>
+        <p>Мы настраиваем логистику, чтобы предложить вам лучшую и самую быструю доставку по Пскову и области. Временно эта функция недоступна.</p>
+    </div>
+
+    <div class="pickup-card">
+        <div class="pickup-icon"><i class="fas fa-store"></i></div>
+        <div class="pickup-content">
+            <h3>Доступен самовывоз из магазина</h3>
+            <div class="pickup-details">
+                <div class="pickup-row">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div><strong>Адрес:</strong> г. Псков, ул. Звездная, д. 3</div>
+                </div>
+                <div class="pickup-row">
+                    <i class="fas fa-clock"></i>
+                    <div><strong>Режим работы:</strong> Пн-Пт 9:00-18:00, Сб 10:00-16:00</div>
+                </div>
+                <div class="pickup-row">
+                    <i class="fas fa-box-open"></i>
+                    <div><strong>Стоимость:</strong> Бесплатно</div>
+                </div>
+                <div class="pickup-row">
+                    <i class="fas fa-bolt"></i>
+                    <div><strong>Сроки:</strong> Сразу после звонка менеджера</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

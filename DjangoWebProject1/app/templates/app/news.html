@@ -1,0 +1,166 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'app/css/news_style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="promo-page">
+    <div class="promo-hero">
+        <div class="promo-hero-bg"></div>
+        <div class="promo-hero-content">
+            <span class="promo-hero-badge">
+                <i class="fas fa-fire"></i> Горячие предложения
+            </span>
+            <h1 class="promo-hero-title">Акции & Новости</h1>
+            <p class="promo-hero-subtitle">Выгодные предложения и свежие новости нашего магазина</p>
+        </div>
+        <div class="promo-hero-particles"></div>
+    </div>
+
+    {% if promotions %}
+    <section class="promo-section">
+        <div class="section-header-modern">
+            <div class="section-header-left">
+                <span class="section-icon"><i class="fas fa-bolt"></i></span>
+                <h2 class="section-title-modern">Актуальные акции</h2>
+            </div>
+            <p class="section-desc">Успейте воспользоваться выгодными предложениями</p>
+        </div>
+        
+        <div class="promo-grid">
+            {% for promo in promotions %}
+            <div class="promo-card-modern {% if forloop.first %}promo-card-featured{% endif %}" style="--card-color: {{ promo.color|default:'#FF6B35' }};">
+                <div class="promo-card-glow"></div>
+                <div class="promo-card-border">
+                    <div class="promo-card-border-gradient"></div>
+                </div>
+                <div class="promo-card-inner">
+                    <div class="promo-card-top">
+                        {% if promo.discount %}
+                        <div class="promo-discount-badge">
+                            <span class="discount-value">-{{ promo.discount }}%</span>
+                        </div>
+                        {% endif %}
+                        {% if promo.is_permanent %}
+                        <span class="promo-permanent-badge">
+                            <i class="fas fa-infinity"></i> Всегда
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="promo-card-icon">
+                        <i class="{{ promo.icon|default:'fas fa-gift' }}"></i>
+                    </div>
+                    
+                    <h3 class="promo-card-title">{{ promo.title }}</h3>
+                    {% if promo.subtitle %}
+                    <p class="promo-card-subtitle">{{ promo.subtitle }}</p>
+                    {% endif %}
+                    
+                    {% if promo.description %}
+                    <p class="promo-card-desc">{{ promo.description|truncatewords:15 }}</p>
+                    {% endif %}
+                    
+                    <div class="promo-card-footer">
+                        {% if promo.end_date and not promo.is_permanent %}
+                        <div class="promo-timer">
+                            <i class="fas fa-clock"></i>
+                            <span>До {{ promo.end_date|date:"d E" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="{{ promo.get_absolute_url }}" class="promo-btn">
+                            <span>{{ promo.link_text }}</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                {% if promo.image %}
+                <div class="promo-card-bg" style="background-image: url('{{ promo.image.url }}');"></div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="news-section">
+        <div class="section-header-modern">
+            <div class="section-header-left">
+                <span class="section-icon news-icon"><i class="fas fa-newspaper"></i></span>
+                <h2 class="section-title-modern">Новости компании</h2>
+            </div>
+            <p class="section-desc">Будьте в курсе последних событий</p>
+        </div>
+        
+        <div class="news-grid-bento">
+            {% if news_list %}
+                {% for article in news_list %}
+                <div class="news-card-bento {% if forloop.first %}news-card-large{% endif %}">
+                    <div class="news-card-image-wrapper">
+                        {% if article.image %}
+                        <img src="{{ article.image.url }}" alt="{{ article.title }}">
+                        {% else %}
+                        <img src="{% static 'app/images/news-placeholder.jpg' %}" alt="{{ article.title }}" onerror="this.parentElement.classList.add('no-image')">
+                        {% endif %}
+                        <div class="news-card-overlay"></div>
+                    </div>
+                    <div class="news-card-content">
+                        <span class="news-card-date">
+                            <i class="fas fa-calendar"></i> {{ article.created_at|date:"d E Y" }}
+                        </span>
+                        <h4 class="news-card-title">{{ article.title }}</h4>
+                        <p class="news-card-excerpt">{{ article.short_description|default:article.content|truncatewords:20 }}</p>
+                        <a href="{{ article.get_absolute_url }}" class="news-card-link">
+                            Читать далее <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="news-card-shine"></div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="news-empty">
+                    <i class="fas fa-newspaper"></i>
+                    <p>Новостей пока нет. Скоро здесь появятся интересные статьи!</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-glow"></div>
+        <div class="cta-content">
+            <h2 class="cta-title">Не нашли нужную информацию?</h2>
+            <p class="cta-text">Наши специалисты всегда готовы помочь вам с выбором и ответить на вопросы</p>
+            <div class="cta-buttons">
+                <a href="{% url 'contact' %}" class="cta-btn cta-btn-primary">
+                    <i class="fas fa-phone"></i> Связаться с нами
+                </a>
+                <a href="{% url 'catalog' %}" class="cta-btn cta-btn-secondary">
+                    <i class="fas fa-shopping-cart"></i> В каталог
+                </a>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.promo-card-modern, .news-card-bento');
+    
+    cards.forEach(card => {
+        card.addEventListener('mousemove', function(e) {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            card.style.setProperty('--mouse-x', `${x}px`);
+            card.style.setProperty('--mouse-y', `${y}px`);
+        });
+    });
+});
+</script>
+{% endblock %}

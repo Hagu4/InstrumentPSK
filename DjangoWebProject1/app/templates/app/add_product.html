@@ -1,0 +1,250 @@
+{% extends "app/layout.html" %}
+
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/add_product.css' %}">
+<style>
+:root {
+    --ts-control-height: 45px;
+    --ts-border-radius: 8px;
+    --ts-border-color: #ddd;
+    --ts-bg: #fff;
+    --ts-item-bg: #FF6B00; /* Цвет выделенного элемента */
+    --ts-item-color: #fff;  /* Цвет текста на выделенном элементе */
+    --ts-option-active-bg: #FF6B00; /* Цвет при наведении в списке */
+    --ts-option-active-color: #fff;
+}
+
+.ts-control {
+    height: var(--ts-control-height);
+    padding: 0 12px; /* Set horizontal padding, remove vertical */
+    border-radius: var(--ts-border-radius);
+    border: 1px solid var(--ts-border-color);
+    background-color: var(--ts-bg);
+    display: flex;
+    align-items: center;
+}
+
+/* This is the key addition to make the placeholder respect the flex alignment */
+.ts-control input {
+    height: 100% !important; 
+    padding: 0 !important;
+}
+
+.ts-dropdown,
+.ts-control {
+    border-radius: var(--ts-border-radius);
+}
+
+.ts-control .item {
+    background: var(--ts-item-bg);
+    color: var(--ts-item-color);
+    border-radius: 5px;
+    padding: 4px 10px;
+}
+
+/* Styling for Tom Select optgroups */
+.ts-dropdown .optgroup-header {
+    background-color: #f0f0f0; /* A light grey background */
+    font-weight: bold;
+    color: #333;
+    padding: 8px 12px;
+    margin-top: 5px; /* Add some space between groups */
+    border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;
+    cursor: default; /* Make it clear it's not clickable */
+}
+
+/* Indent the options within the group */
+.ts-dropdown .optgroup .option {
+    padding-left: 25px; /* Indent child categories */
+}
+
+/* --- Стили для редактора Trumbowyg --- */
+
+/* Общий контейнер */
+.trumbowyg-box {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+}
+
+/* Убираем рамку сверху, т.к. панель кнопок теперь внутри */
+.trumbowyg-editor {
+    border: none;
+    min-height: 200px;
+}
+
+/* Панель кнопок */
+.trumbowyg-button-pane {
+    background: #f9f9f9;
+    border-bottom: 1px solid #ddd;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin: 0;
+    padding: 5px;
+}
+
+/* Активная кнопка */
+.trumbowyg-button-pane .trumbowyg-active button {
+    background-color: #FF6B00;
+    color: #fff;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Основная информация -->
+        <div class="form-section">
+            <h2 class="form-section-title">Основная информация</h2>
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                    {{ form.title }}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.sku.id_for_label }}">{{ form.sku.label }}</label>
+                    {{ form.sku }}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.old_price.id_for_label }}">{{ form.old_price.label }}</label>
+                    {{ form.old_price }}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+                    {{ form.price }}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+                    {{ form.quantity }}
+                </div>
+                <div class="form-field">
+                    <label for="category-select">Категория</label>
+                    <select name="category" id="category-select" required>
+                        <option value="">Выберите категорию...</option>
+                        {% for parent in parent_categories %}
+                            <optgroup label="{{ parent.name }}">
+                                {% for child in parent.children.all %}
+                                    {# Проверяем, выбрана ли эта категория, для редактирования товара #}
+                                    <option value="{{ child.id }}" {% if form.instance.category_id == child.id %}selected{% endif %}>
+                                        {{ child.name }}
+                                    </option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.brand.id_for_label }}">{{ form.brand.label }}</label>
+                    {{ form.brand }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Изображения -->
+        <div class="form-section">
+            <h2 class="form-section-title">Фотографии товара</h2>
+            <div id="previews-container" class="previews-container"></div>
+            <div class="upload-area">
+                <label for="id_images" class="upload-zone">
+                    <div class="upload-icon">☁️</div>
+                    <div class="upload-text">Нажмите, чтобы выбрать фото (можно несколько)</div>
+                </label>
+                <input type="file" name="images" id="id_images" class="hidden-file-input" multiple accept="image/*">
+            </div>
+        </div>
+
+        <!-- Описание (ШАГ 3) -->
+        <div class="form-section">
+            <h2 class="form-section-title">Описание</h2>
+            <div class="form-field description-field">
+                {{ form.description }}
+            </div>
+        </div>
+
+        <!-- Характеристики (ШАГ 2) -->
+        <div class="form-section">
+            <h2 class="form-section-title">Характеристики</h2>
+            {{ formset.management_form }}
+            <div id="characteristics-list">
+                {% for char_form in formset %}
+                <div class="char-row">
+                    {{ char_form.id }}
+                    <div class="char-field">
+                        <label for="{{ char_form.characteristic.id_for_label }}">Название</label>
+                        {{ char_form.characteristic }}
+                    </div>
+                    <div class="char-field">
+                        <label for="{{ char_form.value.id_for_label }}">Значение</label>
+                        {{ char_form.value }}
+                    </div>
+                    {% if char_form.instance.pk %}<div style="display: none;">{{ char_form.DELETE }}</div>{% endif %}
+                    <button type="button" class="remove-btn">✕</button>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" id="add-characteristic-btn" class="add-char-btn">+ Добавить характеристику</button>
+        </div>
+
+        <!-- Футер -->
+        <div class="form-footer">
+            <a href="{% url 'catalog' %}" class="btn btn-secondary">Отмена</a>
+            <button type="submit" class="btn btn-primary">Сохранить товар</button>
+        </div>
+    </form>
+</div>
+
+<!-- Шаблон для новой формы характеристики -->
+<template id="empty-form-template">
+    <div class="char-row">
+        {{ formset.empty_form.id }}
+        <div class="char-field">
+            <label for="id_characteristics-__prefix__-characteristic">Название</label>
+            {{ formset.empty_form.characteristic }}
+        </div>
+        <div class="char-field">
+            <label for="id_characteristics-__prefix__-value">Значение</label>
+            {{ formset.empty_form.value }}
+        </div>
+        <button type="button" class="remove-btn">✕</button>
+    </div>
+</template>
+
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="{% static 'app/js/add_product.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new TomSelect('select[name="category"]', {
+            create: false,
+            placeholder: 'Выберите категорию...',
+        });
+        new TomSelect('#{{ form.brand.id_for_label }}', {
+            create: false, 
+            placeholder: 'Выберите бренд...',
+        });
+    });
+
+    $(document).ready(function(){
+        $('#{{ form.description.id_for_label }}').trumbowyg({
+            lang: 'ru',
+            btns: [
+                ['strong', 'em'],
+                ['h3', 'h4'],
+                ['unorderedList', 'orderedList'],
+                ['link'],
+                ['viewHTML']
+            ]
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,208 @@
+.thanks-container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.thanks-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px;
+    background: var(--theme-surface);
+    border-radius: 15px;
+    box-shadow: var(--theme-shadow);
+    border: 1px solid var(--theme-border);
+}
+
+.thanks-icon {
+    font-size: 4rem;
+    color: var(--theme-success);
+    margin-bottom: 20px;
+}
+
+.thanks-header h2 {
+    color: var(--theme-text-primary);
+    font-size: 2.2rem;
+    margin-bottom: 15px;
+}
+
+.thanks-header p {
+    color: var(--theme-text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.thanks-content {
+    background: var(--theme-surface);
+    border-radius: 15px;
+    box-shadow: var(--theme-shadow);
+    border: 1px solid var(--theme-border);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.thanks-content h3 {
+    color: var(--theme-text-primary);
+    font-size: 1.4rem;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.data-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.data-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+    background: var(--theme-bg-secondary);
+    border-radius: 8px;
+    border-left: 4px solid var(--theme-accent-primary);
+}
+
+.data-item-full {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.data-label {
+    font-weight: 600;
+    color: var(--theme-text-primary);
+    min-width: 180px;
+    flex-shrink: 0;
+}
+
+.data-value {
+    color: var(--theme-text-secondary);
+    flex: 1;
+}
+
+.data-value .fas.fa-star {
+    color: #ffc107;
+}
+
+.data-value .far.fa-star {
+    color: var(--theme-border);
+}
+
+.thanks-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 25px;
+    border: 2px solid;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary-custom {
+    background: var(--theme-accent-primary);
+    color: white;
+    border-color: var(--theme-accent-primary);
+}
+
+.btn-primary-custom:hover {
+    background: var(--theme-accent-primary-hover);
+    border-color: var(--theme-accent-primary-hover);
+    transform: translateY(-2px);
+}
+
+.btn-secondary-custom {
+    background: var(--theme-bg-secondary);
+    color: var(--theme-text-primary);
+    border-color: var(--theme-border);
+}
+
+.btn-secondary-custom:hover {
+    background: var(--theme-hover-bg);
+    border-color: var(--theme-border);
+    transform: translateY(-2px);
+}
+
+.bonus-block {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: var(--theme-surface);
+    border-radius: 15px;
+    box-shadow: var(--theme-shadow);
+    border: 1px solid var(--theme-border);
+}
+
+.bonus-text {
+    font-size: 1.2rem;
+    color: var(--theme-text-primary);
+    margin-bottom: 20px;
+}
+
+.coupon-block {
+    border: 2px dashed var(--theme-accent-primary);
+    background: rgba(var(--theme-accent-primary-rgb), 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 0 auto 20px;
+    max-width: 300px;
+}
+
+.coupon-code {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--theme-accent-primary);
+    letter-spacing: 2px;
+    user-select: all;
+}
+
+.copy-button {
+    background: var(--theme-accent-primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.copy-button:hover {
+    background: var(--theme-accent-primary-hover);
+}
+
+@media (max-width: 768px) {
+    .data-item {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .data-label {
+        min-width: auto;
+    }
+
+    .thanks-actions {
+        flex-direction: column;
+    }
+
+    .btn {
+        justify-content: center;
+    }
+}

@@ -1,0 +1,197 @@
+/* 
+   MODERN DJANGO ADMIN REDESIGN - REINFORCED V3
+   Targeting Jazzmin/Bootstrap admin interface with high specificity
+*/
+
+:root {
+    --admin-accent: #FF6B00;
+    --admin-bg: #f4f7f6;
+    --admin-card-bg: #ffffff;
+    --admin-border: #e2e8f0;
+    --admin-text-dark: #1e293b;
+    --admin-text-muted: #64748b;
+    --admin-input-focus: rgba(255, 107, 0, 0.2);
+}
+
+/* 1. GLOBAL LAYOUT OVERRIDE */
+body.app-app .content-wrapper,
+body.app-auth .content-wrapper,
+.content-wrapper {
+    background-color: var(--admin-bg) !important;
+    padding-top: 20px !important;
+}
+
+/* 2. CARD STYLING */
+.card, .card-outline {
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.03) !important;
+    margin-bottom: 30px !important;
+    background: #fff !important;
+}
+
+.card-header {
+    background: #fafafa !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    padding: 20px 30px !important;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.card-title {
+    font-weight: 800 !important;
+    color: var(--admin-text-dark) !important;
+    font-size: 1.2rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* 3. TABS (Jazzmin) */
+.nav-tabs {
+    border-bottom: 1px solid var(--admin-border) !important;
+    margin-bottom: 20px !important;
+}
+
+.nav-tabs .nav-link {
+    border: none !important;
+    font-weight: 700 !important;
+    color: var(--admin-text-muted) !important;
+    padding: 15px 30px !important;
+    border-radius: 0 !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--admin-accent) !important;
+    border-bottom: 3px solid var(--admin-accent) !important;
+    background: transparent !important;
+}
+
+/* 4. FORM GROUPS - AGGRESSIVE SPACING */
+.form-group.row {
+    padding: 25px 30px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.form-group.row:hover {
+    background-color: #fbfcfe;
+}
+
+label {
+    font-weight: 800 !important;
+    color: #475569 !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 5. INPUTS & SELECTS */
+input[type="text"], 
+input[type="number"], 
+input[type="email"], 
+textarea, 
+select {
+    border-radius: 12px !important;
+    border: 1.5px solid var(--admin-border) !important;
+    padding: 12px 18px !important;
+    font-size: 1rem !important;
+    background: #fff !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    width: 100% !important;
+    max-width: 800px !important;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: var(--admin-accent) !important;
+    box-shadow: 0 0 0 4px var(--admin-input-focus) !important;
+}
+
+/* 6. DESCRIPTION TEXTAREA - GIGANTIC */
+#id_description, textarea[name="description"] {
+    min-height: 500px !important;
+    font-size: 1.1rem !important;
+    line-height: 1.7 !important;
+    border-left: 6px solid var(--admin-accent) !important;
+    background: #fff !important;
+    max-width: 100% !important;
+}
+
+/* 7. INLINES (Characteristics Table) */
+.inline-group .card {
+    margin: 30px !important;
+}
+
+.inline-related table thead th {
+    background: #f8fafc !important;
+    padding: 15px !important;
+    border: none !important;
+}
+
+.inline-related tr.form-row td {
+    padding: 20px 15px !important;
+    vertical-align: middle !important;
+}
+
+/* Make characteristics inputs WIDER */
+.field-characteristic .select2-container {
+    width: 500px !important;
+    min-width: 500px !important;
+}
+
+.field-value input {
+    width: 600px !important;
+    min-width: 600px !important;
+    font-weight: 700 !important;
+}
+
+/* 8. BUTTONS */
+.btn-primary, .btn-info, .btn-success {
+    background-color: var(--admin-accent) !important;
+    border: none !important;
+    border-radius: 14px !important;
+    padding: 12px 30px !important;
+    font-weight: 800 !important;
+    box-shadow: 0 8px 20px rgba(255, 107, 0, 0.2) !important;
+}
+
+.btn-primary:hover {
+    background-color: #e65a00 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(255, 107, 0, 0.3) !important;
+}
+
+.submit-row {
+    background: #f8fafc !important;
+    padding: 25px 40px !important;
+    border-top: 1px solid var(--admin-border) !important;
+}
+
+/* 9. SELECT2 (DROPDOWNS) - ULTIMATE FORCE */
+/* Force borders and padding on every option */
+.select2-container--default .select2-results > .select2-results__options > .select2-results__option {
+    padding: 15px 20px !important;
+    border-bottom: 1px solid #dee2e6 !important; /* Clearly visible gray line */
+    background-color: #fff !important;
+    color: #1e293b !important;
+    font-weight: 500 !important;
+}
+
+/* Hover / Highlighted state */
+.select2-container--default .select2-results > .select2-results__options > .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results > .select2-results__options > .select2-results__option--highlighted {
+    background-color: var(--admin-accent) !important;
+    color: #ffffff !important;
+}
+
+/* Dropdown container itself */
+.select2-dropdown {
+    border: 1.5px solid var(--admin-border) !important;
+    border-radius: 15px !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15) !important;
+    overflow: hidden !important;
+    z-index: 9999 !important;
+}
+
+/* Remove border from last item */
+.select2-results__option:last-child {
+    border-bottom: none !important;
+}

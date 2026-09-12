@@ -1,0 +1,63 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'app/css/feedback_thanks_style.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<div class="thanks-container">
+    <div class="thanks-header">
+        <div class="thanks-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h2>Спасибо за ваш отзыв!</h2>
+        <p>Мы благодарим вас за то, что нашли время оставить отзыв. Ваше мнение очень важно для нас!</p>
+    </div>
+
+    <div class="bonus-block">
+        <p class="bonus-text">В знак благодарности дарим вам скидку 5% на следующую покупку!</p>
+        <div class="coupon-block">
+            <span class="coupon-code" id="couponCode">SPASIBO5</span>
+            <button class="copy-button" id="copyCouponBtn">
+                <i class="fas fa-copy"></i> Копировать
+            </button>
+        </div>
+    </div>
+
+    <div class="thanks-actions">
+        <a href="{% url 'home' %}" class="btn btn-secondary-custom">
+            Вернуться на главную
+        </a>
+        <a href="{% url 'catalog' %}" class="btn btn-primary-custom">
+            Перейти в каталог
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const copyCouponBtn = document.getElementById('copyCouponBtn');
+    const couponCodeSpan = document.getElementById('couponCode');
+
+    if (copyCouponBtn && couponCodeSpan) {
+        copyCouponBtn.addEventListener('click', function() {
+            const couponCode = couponCodeSpan.textContent;
+            navigator.clipboard.writeText(couponCode).then(function() {
+                // Optional: Show a tooltip or change button text temporarily
+                const originalText = copyCouponBtn.innerHTML;
+                copyCouponBtn.innerHTML = '<i class="fas fa-check"></i> Скопировано!';
+                setTimeout(function() {
+                    copyCouponBtn.innerHTML = originalText;
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                // Fallback for older browsers or non-secure contexts (http)
+                // You might want to display an alert or a message to the user
+                alert('Не удалось скопировать. Пожалуйста, скопируйте вручную: ' + couponCode);
+            });
+        });
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,947 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load humanize %}
+{% load app_filters %}
+{% block content %}
+
+<div class="container my-5">
+    <h2 style="font-size: 3rem; margin-bottom: 2rem;">{{ title }}</h2>
+
+    {% if order_items %}
+    <div class="cart-wrapper">
+    <form method="post" id="cart-form">
+        {% csrf_token %}
+        <div class="cart-layout">
+
+            <!-- Items Column -->
+            <div class="cart-items-column">
+                <div class="cart-header">
+                    <span class="cart-header-title">Товары в корзине</span>
+                </div>
+                {% for item in order_items %}
+                <div class="cart-item-card" data-item-id="{{ item.id }}">
+                    <a href="{% url 'product_detail' item.product.id %}" class="item-image-link">
+                        <div class="item-image">
+                            {% if item.first_image_url %}
+                                <img src="{{ item.first_image_url }}" alt="{{ item.product.title }}">
+                            {% else %}
+                                <img src="{% static 'app/content/logo.png' %}" alt="No image available" style="opacity: 0.5;">
+                            {% endif %}
+                        </div>
+                    </a>
+                    <div class="item-info">
+                        <a href="{% url 'product_detail' item.product.id %}" class="item-details-link">
+                            <div class="item-title">{{ item.product.title }}</div>
+                            <div class="item-sku">Артикул: {{ item.product.sku|default:item.product.id }}</div>
+                            {% if item.product.quantity <= 0 %}
+                            <div class="item-status-preorder" style="color: #3B82F6; font-size: 0.8rem; font-weight: 600; margin-top: 5px;">
+                                <i class="fas fa-clock"></i> ПОД ЗАКАЗ (3-10 дней)
+                            </div>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="item-quantity">
+                        <div class="quantity-selector">
+                            <button type="button" class="quantity-btn minus" data-item-id="{{ item.id }}">-</button>
+                            <input type="number" name="quantity_{{ item.id }}" value="{{ item.quantity }}" min="1" max="{% if item.product.quantity > 0 %}{{ item.product.quantity }}{% else %}999{% endif %}" class="quantity-input" data-item-id="{{ item.id }}" readonly>
+                            <button type="button" class="quantity-btn plus" data-item-id="{{ item.id }}">+</button>
+                        </div>
+                    </div>
+                    <div class="item-price">
+                        <span class="price-value" data-item-id="{{ item.id }}">{{ item.get_cost }}</span> руб.
+                    </div>
+                    <div class="item-actions">
+                        <button type="button" class="delete-btn" data-item-id="{{ item.id }}" title="Удалить">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Summary Column -->
+            <div class="cart-summary-column">
+                <div class="summary-section">
+                    <div class="summary-card">
+                        <h4>Ваш заказ</h4>
+                        
+                        <div class="promo-section">
+                            <div class="promo-input-group">
+                                <input type="text" id="promo-input" class="promo-input" placeholder="Промокод">
+                                <button type="button" id="promo-apply-btn" class="promo-btn">Применить</button>
+                            </div>
+                            <div id="promo-message" class="promo-message"></div>
+                        </div>
+
+                        <div class="summary-row">
+                            <sp an>Товары (<span id="total-quantity">{{ order_items.count }}</span> шт):</span>
+                            <span id="subtotal-cost"><span class="price-figure">{{ total_cost }}</span> ₽</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Получение:</span>
+                            <span>Самовывоз</span>
+                        </div>
+                        <div class="summary-row discount" id="discount-row" style="display: none;">
+                            <span>Скидка:</span>
+                            <span id="discount-cost">− 0 ₽</span>
+                        </div>
+                        
+                        <div class="summary-divider"></div>
+                        
+                        <div class="summary-total">
+                            <span>Итого:</span>
+                            <span id="total-cost"><span class="price-figure">{{ total_cost }}</span> ₽</span>
+                        </div>
+                        
+                        <a href="{% url 'checkout' %}" class="btn btn-checkout">Оформить заказ</a>
+                    </div>
+
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <div class="info-card-icon">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="info-card-content">
+                                <div class="info-card-title">Удобный самовывоз</div>
+                                <div class="info-card-text">В центре Пскова</div>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="info-card-content">
+                                <div class="info-card-title">Гарантия 12 месяцев</div>
+                                <div class="info-card-text">На все товары из каталога</div>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-icon">
+                                <i class="fas fa-undo"></i>
+                            </div>
+                            <div class="info-card-content">
+                                <div class="info-card-title">Возврат 14 дней</div>
+                                <div class="info-card-text">Вернём деньги, если не подошло</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+    </div>
+    {% else %}
+        <div class="cart-empty-state" style="text-align: center; padding: 40px; background-color: #f8f9fa; border-radius: 8px;">
+        <svg style="width: 100px; height: 100px; color: #ced4da; margin-bottom: 1.5rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.2 7.5h12.5l-1.6 6.4H8.3L7.2 7.5z" fill="currentColor" opacity=".3"></path><path d="M7.2 7.5L5.6 3H3v1.5h1.9l3.2 9h9.2l2.1-8.4H7.2zm1.1 8.4l-.8-3.2h9.1l-.8 3.2H8.3zm.7-10.4h12.5L20 13.9H8.3L7.2 7.5h.1z" fill="currentColor"></path><path d="M9 20a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm7.5 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" fill="currentColor"></path></svg>
+        <h2 style="font-size: 2.75rem; font-weight: 500; margin: 0 0 0.5rem 0;">Ваша корзина пуста</h2>
+        <p style="font-size: 2.1rem; color: #6c757d; margin-bottom: 2rem;">Загляните в каталог, там много интересного</p>
+        <a href="{% url 'catalog' %}" class="btn btn-primary btn-lg">Перейти в каталог</a>
+    </div>
+
+    {% if recently_viewed_products %}
+    <section class="recently-viewed" style="margin-top: 3rem;">
+        <h3 style="font-size: 1.8rem; font-weight: 600; margin-bottom: 1.5rem; text-align: center; color: #1E293B;">Последнее, что вы смотрели</h3>
+        <div class="recently-viewed-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;">
+            {% for product in recently_viewed_products %}
+            <a href="{% url 'product_detail' product.id %}" style="text-decoration: none;">
+                <div class="recent-card" style="background: white; border-radius: 20px; overflow: hidden; border: 1px solid #E2E8F0; transition: all 0.3s; height: 100%; display: flex; flex-direction: column;">
+                    <div class="recent-card-image" style="height: 240px; overflow: hidden; background: #fff; padding: 20px;">
+                        {% with first_image=product.images.first %}
+                            {% if first_image %}
+                                <img src="{{ first_image.image.url }}" alt="{{ product.title }}" style="width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)';" onmouseout="this.style.transform='none';">
+                            {% else %}
+                                <img src="{% static 'app/content/logo.png' %}" alt="No image" style="width: 100%; height: 100%; object-fit: contain; opacity: 0.5;">
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="recent-card-body" style="padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; background: #fafafa; border-top: 1px solid #f1f5f9;">
+                        <div class="recent-card-title" style="font-size: 1.6rem; font-weight: 600; color: #1E293B; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 1rem;">{{ product.title }}</div>
+                        <div class="recent-card-price" style="font-size: 1.4rem; font-weight: 800; color: #FF6B00;">{{ product.price|format_price }} ₽</div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    {% endif %}
+</div>
+
+<style>
+    .recent-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border-color: #FF6B00;
+    }
+
+    @media (max-width: 992px) {
+        .recently-viewed-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+        }
+    }
+    @media (max-width: 768px) {
+        .recently-viewed-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+    @media (max-width: 480px) {
+        .recently-viewed-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    .cart-wrapper {
+        background: white;
+        border-radius: 24px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+
+    .cart-layout {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .cart-items-column {
+        flex: 1 1 60%;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .cart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        padding: 0 0.5rem;
+    }
+
+    .cart-header-title {
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: #666;
+    }
+
+    .cart-summary-column {
+        flex: 0 0 38%;
+        max-width: 500px;
+    }
+
+    .summary-section {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #e5e7eb;
+        padding: 1.5rem;
+        position: sticky;
+        top: 100px;
+    }
+
+    .summary-card {
+        background: #f9fafb;
+        padding: 1.5rem;
+        border-radius: 16px;
+        margin-bottom: 1rem;
+    }
+
+    .cart-item-card {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    
+    .cart-item-card:hover {
+        border-color: #f97316;
+        box-shadow: 0 4px 15px rgba(249, 115, 22, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .cart-item-card.removing {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+
+    .item-image {
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        background-color: #f9fafb;
+        overflow: hidden;
+        flex-shrink: 0;
+        border: 1px solid #f3f4f6;
+    }
+
+    .item-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .cart-item-card:hover .item-image img {
+        transform: scale(1.05);
+    }
+    
+    .item-image-link, .item-details-link {
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .item-info {
+        flex-grow: 1;
+        min-width: 150px;
+    }
+
+    .item-title {
+        font-weight: 600;
+        font-size: 1rem;
+        line-height: 1.4;
+        color: #1f2937;
+        margin-bottom: 0.4rem;
+    }
+
+    .item-sku {
+        font-size: 0.85rem;
+        color: #9ca3af;
+    }
+
+    .item-quantity {
+        width: 120px;
+        display: flex;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .quantity-selector {
+        display: flex;
+        align-items: center;
+        background: #f9fafb;
+        border-radius: 10px;
+        padding: 4px;
+        gap: 4px;
+    }
+
+    .quantity-btn {
+        width: 36px;
+        height: 36px;
+        border: none;
+        background: white;
+        color: #374151;
+        cursor: pointer;
+        font-size: 1.2rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+
+    .quantity-btn:hover {
+        background: #f97316;
+        color: white;
+    }
+
+    .quantity-btn.minus:hover {
+        background: #ef4444;
+    }
+
+    .quantity-input {
+        width: 40px;
+        height: 36px;
+        text-align: center;
+        border: none;
+        background: transparent;
+        font-weight: 700;
+        font-size: 1rem;
+        -moz-appearance: textfield;
+    }
+    .quantity-input::-webkit-outer-spin-button,
+    .quantity-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .item-price {
+        font-weight: 700;
+        font-size: 1.2rem;
+        width: 120px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+    
+    .item-price .price-value {
+        color: #f97316;
+    }
+    
+    .price-figure {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .item-actions {
+        width: 40px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .delete-btn {
+        background: none;
+        border: none;
+        color: #d1d5db;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+    }
+    .delete-btn:hover {
+        color: #ef4444;
+        background: #fef2f2;
+    }
+
+    .summary-card h4 {
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        font-size: 1.5rem;
+        color: #1f2937;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1.2rem;
+        font-size: 1.2rem;
+        color: #6b7280;
+    }
+
+    .summary-row.discount {
+        color: #059669;
+    }
+
+    .summary-row.discount span:last-child {
+        font-weight: 600;
+    }
+
+    .summary-divider {
+        height: 2px;
+        background: #e5e7eb;
+        margin: 1.5rem 0;
+    }
+
+    .summary-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+    }
+    .summary-total span:last-child {
+        font-size: 2.2rem;
+        color: #f97316;
+    }
+
+    .promo-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .promo-input-group {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .promo-input {
+        flex: 1;
+        padding: 1rem 1.25rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .promo-input:focus {
+        border-color: #f97316;
+    }
+
+    .promo-input.success {
+        border-color: #059669;
+        background: #f0fdf4;
+    }
+
+    .promo-input.error {
+        border-color: #ef4444;
+        background: #fef2f2;
+    }
+
+    .promo-btn {
+        padding: 1rem 1.5rem;
+        background: #f97316;
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .promo-btn:hover {
+        background: #ea580c;
+    }
+
+    .promo-btn:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
+    }
+
+    .promo-message {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        display: none;
+    }
+
+    .promo-message.success {
+        display: block;
+        color: #059669;
+        background: #f0fdf4;
+    }
+
+    .promo-message.error {
+        display: block;
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .promo-applied {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: #f0fdf4;
+        border: 1px solid #059669;
+        border-radius: 10px;
+        margin-top: 0.5rem;
+    }
+
+    .promo-applied-code {
+        font-weight: 600;
+        color: #059669;
+    }
+
+    .promo-applied-remove {
+        background: none;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        transition: color 0.2s;
+    }
+
+    .promo-applied-remove:hover {
+        color: #ef4444;
+    }
+
+    .btn-checkout {
+        width: 100%;
+        padding: 1.25rem;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: white;
+        background: linear-gradient(135deg, #f97316, #ea580c);
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35);
+    }
+    .btn-checkout:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(249, 115, 22, 0.45);
+    }
+
+    .info-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .info-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+
+    .info-card:hover {
+        background: #f3f4f6;
+    }
+
+    .info-card-icon {
+        width: 42px;
+        height: 42px;
+        background: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .info-card-icon i {
+        color: #f97316;
+        font-size: 1.1rem;
+    }
+
+    .info-card-content {
+        flex: 1;
+    }
+
+    .info-card-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #1f2937;
+    }
+
+    .info-card-text {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 2px;
+    }
+    
+    @media (max-width: 1200px) {
+        .cart-layout {
+            flex-direction: column;
+        }
+        .cart-items-column {
+            flex: none;
+        }
+        .cart-summary-column {
+            flex: none;
+            max-width: 100%;
+        }
+        .summary-section {
+            position: static;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .cart-layout {
+            flex-direction: column;
+        }
+        .cart-summary-column {
+            max-width: 100%;
+        }
+        .summary-section {
+            position: static;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .cart-item-card {
+            flex-wrap: wrap;
+            padding: 1.25rem;
+            gap: 1.25rem;
+        }
+        .item-image {
+            width: 100px;
+            height: 100px;
+        }
+        .item-info {
+            flex-basis: calc(100% - 124px);
+        }
+        .item-title {
+            font-size: 1.1rem;
+        }
+        .item-quantity { 
+            margin-left: 0;
+            width: auto;
+        }
+        .item-price { 
+            width: auto; 
+            font-size: 1.3rem;
+        }
+        .item-actions {
+            position: absolute;
+            right: 1.25rem;
+            top: 1.25rem;
+        }
+        .cart-item-card {
+            position: relative;
+        }
+    }
+
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cartForm = document.getElementById('cart-form');
+
+    function updateCart(itemId, quantity, deleteItem = false) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        if (deleteItem) {
+            formData.append(`delete_${itemId}`, 'true');
+        } else {
+            formData.append(`quantity_${itemId}`, quantity);
+        }
+
+        fetch(cartForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (deleteItem || quantity <= 0) {
+                    removeItemFromDisplay(itemId, data);
+                } else {
+                    updateItemDisplay(itemId, data);
+                }
+                updateSummary(data);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            location.reload(); 
+        });
+    }
+
+    function updateItemDisplay(itemId, data) {
+        const itemCard = document.querySelector(`.cart-item-card[data-item-id="${itemId}"]`);
+        if (!itemCard) return;
+
+        itemCard.querySelector('.quantity-input').value = data.quantity;
+        itemCard.querySelector('.price-value').textContent = Math.round(data.item_total);
+    }
+    
+    function removeItemFromDisplay(itemId, data) {
+        const itemCard = document.querySelector(`.cart-item-card[data-item-id="${itemId}"]`);
+        if (itemCard) {
+            itemCard.classList.add('removing');
+            setTimeout(() => {
+                itemCard.remove();
+                if (data.total_quantity === 0) {
+                    location.reload();
+                }
+            }, 300);
+        }
+    }
+
+    function updateSummary(data) {
+        document.getElementById('total-quantity').textContent = data.total_quantity;
+        
+        // If promo code is applied, recalculate with discount
+        const discountRow = document.getElementById('discount-row');
+        const discountCostEl = document.getElementById('discount-cost');
+        
+        if (discountRow && discountRow.style.display !== 'none' && data.promo_discount) {
+            const newTotal = data.total_cost - data.promo_discount;
+            document.querySelector('#subtotal-cost .price-figure').textContent = Math.round(data.total_cost);
+            document.querySelector('#total-cost .price-figure').textContent = Math.round(newTotal);
+            discountCostEl.textContent = '− ' + Math.round(data.promo_discount) + ' ₽';
+        } else {
+            document.querySelector('#subtotal-cost .price-figure').textContent = Math.round(data.total_cost);
+            document.querySelector('#total-cost .price-figure').textContent = Math.round(data.total_cost);
+        }
+
+        // Update the header cart badge
+        const cartBadge = document.getElementById('cart-badge');
+        if (cartBadge) {
+            const newCount = data.total_quantity;
+            cartBadge.textContent = newCount;
+
+            if (newCount > 0) {
+                cartBadge.style.display = 'flex'; // Ensure it's visible
+                cartBadge.classList.remove('pulse'); // Remove previous animation class
+                // Trigger reflow to restart animation
+                void cartBadge.offsetWidth;
+                cartBadge.classList.add('pulse'); // Add animation class
+            } else {
+                cartBadge.style.display = 'none'; // Hide if count is 0
+            }
+        }
+    }
+
+    cartForm.addEventListener('click', function(e) {
+        // Prevent action if a link was clicked inside the form
+        if (e.target.closest('a')) {
+            return;
+        }
+
+        const target = e.target;
+        const button = target.closest('.quantity-btn, .delete-btn');
+        if (!button) return;
+        
+        e.preventDefault(); // Prevent form submission if a button is clicked
+
+        const itemCard = button.closest('.cart-item-card');
+        const itemId = itemCard.dataset.itemId;
+        
+        if (button.classList.contains('delete-btn')) {
+            updateCart(itemId, 0, true);
+            return;
+        }
+
+        const input = itemCard.querySelector('.quantity-input');
+        let quantity = parseInt(input.value);
+        const maxQuantity = parseInt(input.getAttribute('max'));
+
+        if (button.classList.contains('plus')) {
+            if (quantity < maxQuantity) {
+                quantity++;
+                input.value = quantity;
+                updateCart(itemId, quantity);
+            }
+        } else if (button.classList.contains('minus')) {
+            quantity--;
+            input.value = quantity;
+            updateCart(itemId, quantity); // Let backend handle removal on quantity < 1
+        }
+    });
+
+    // Promo Code Functionality
+    const promoInput = document.getElementById('promo-input');
+    const promoApplyBtn = document.getElementById('promo-apply-btn');
+    const promoMessage = document.getElementById('promo-message');
+    const discountRow = document.getElementById('discount-row');
+    const discountCost = document.getElementById('discount-cost');
+    const totalCostEl = document.getElementById('total-cost');
+    const subtotalCostEl = document.getElementById('subtotal-cost');
+
+    function applyPromoCode() {
+        const code = promoInput.value.trim().toUpperCase();
+        if (!code) {
+            showPromoMessage('Введите промокод', 'error');
+            return;
+        }
+
+        promoApplyBtn.disabled = true;
+        promoApplyBtn.textContent = 'Проверка...';
+
+        fetch('{% url "apply_promo_code" %}', {
+            method: 'POST',
+            body: new URLSearchParams({
+                'promo_code': code,
+                'csrfmiddlewaretoken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            promoApplyBtn.disabled = false;
+            promoApplyBtn.textContent = 'Применить';
+
+            if (data.success) {
+                promoInput.classList.remove('error');
+                promoInput.classList.add('success');
+                promoInput.disabled = true;
+                promoApplyBtn.style.display = 'none';
+                showPromoApplied(code, data.discount);
+                discountRow.style.display = 'flex';
+                discountCost.textContent = '− ' + Math.round(data.discount) + ' ₽';
+                totalCostEl.querySelector('.price-figure').textContent = Math.round(data.new_total);
+                subtotalCostEl.querySelector('.price-figure').textContent = Math.round(data.new_total + data.discount);
+            } else {
+                promoInput.classList.remove('success');
+                promoInput.classList.add('error');
+                showPromoMessage(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            promoApplyBtn.disabled = false;
+            promoApplyBtn.textContent = 'Применить';
+            showPromoMessage('Произошла ошибка', 'error');
+        });
+    }
+
+    function showPromoMessage(message, type) {
+        promoMessage.textContent = message;
+        promoMessage.className = 'promo-message ' + type;
+        promoMessage.style.display = 'block';
+    }
+
+    function showPromoApplied(code, discount) {
+        const promoSection = document.querySelector('.promo-section');
+        promoMessage.style.display = 'none';
+        
+        const appliedDiv = document.createElement('div');
+        appliedDiv.className = 'promo-applied';
+        appliedDiv.innerHTML = `
+            <span class="promo-applied-code">${code}</span>
+            <button type="button" class="promo-applied-remove" title="Удалить">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        appliedDiv.querySelector('.promo-applied-remove').addEventListener('click', function() {
+            removePromoCode(appliedDiv);
+        });
+        
+        promoSection.appendChild(appliedDiv);
+    }
+
+    function removePromoCode(appliedDiv) {
+        fetch('{% url "remove_promo_code" %}', {
+            method: 'POST',
+            body: new URLSearchParams({
+                'csrfmiddlewaretoken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            promoInput.value = '';
+            promoInput.disabled = false;
+            promoInput.classList.remove('success', 'error');
+            promoApplyBtn.style.display = 'block';
+            promoApplyBtn.textContent = 'Применить';
+            appliedDiv.remove();
+            discountRow.style.display = 'none';
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    promoApplyBtn.addEventListener('click', applyPromoCode);
+    promoInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applyPromoCode();
+        }
+    });
+});
+</script>
+{% endblock %}

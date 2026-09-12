@@ -1,0 +1,778 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load humanize %}
+{% load app_filters %}
+
+{% block styles %}
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/catalog_redesign.css' %}?v=4.5" />
+{% endblock %}
+
+{% block full_width_content %}
+
+<div class="container catalog-page-container">
+    
+    {# 1. Left Sidebar #}
+    <aside class="catalog-sidebar">
+        <div class="sidebar-categories">
+            <h3>Категории</h3>
+            <ul>
+                <li class="category-item {% if not current_category %}active{% endif %}">
+                    <a href="{% url 'catalog' %}">
+                        <span class="cat-icon" style="--cat-color: #F97316;"><i class="fas fa-th-large"></i></span>
+                        <span>Все товары</span>
+                    </a>
+                </li>
+                {% for category in top_level_categories %}
+                <li class="category-item {% if category.children.all %}has-children{% endif %} {% if current_category.slug == category.slug or current_category.parent.slug == category.slug %}active current-parent{% endif %}">
+                    <a href="{% url 'catalog_category' category_slug=category.slug %}">
+                        <span class="cat-icon" {% if category.color %}style="--cat-color: {{ category.color }};"{% endif %}>
+                            {% if category.icon %}
+                                <i class="{{ category.icon }}"></i>
+                            {% elif category.image %}
+                                <img src="{{ category.image.url }}" alt="">
+                            {% else %}
+                                <i class="fas fa-folder"></i>
+                            {% endif %}
+                        </span>
+                        <span>{{ category.name }}</span>
+                        {% if category.children.all %}<i class="fas fa-chevron-right cat-chevron"></i>{% endif %}
+                    </a>
+                    {% if category.children.all %}
+                    <ul class="subcategory-list" style="--cat-color: {{ category.color|default:'#F97316' }};">
+                        <li class="subcategory-header">
+                            <a href="{% url 'catalog_category' category_slug=category.slug %}" class="subcategory-header-link">
+                                <i class="{{ category.icon|default:'fas fa-folder' }}"></i>
+                                <div class="sub-header-info">
+                                    <span class="sub-header-title">Все в: {{ category.name }}</span>
+                                    <span class="sub-header-count">{{ category.children.count }} подкатегорий · {{ category.catalog_product_count }} товаров</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="subcategory-grid{% if category.children.count > 8 %} subcategory-grid-large{% endif %}">
+                            {% for subcategory in category.children.all %}
+                            <div class="sub-item-group {% if subcategory.children.all %}has-nested-subcategories{% endif %} {% if current_category.slug == subcategory.slug or current_category.parent.slug == subcategory.slug %}active{% endif %}">
+                                <div class="sub-item-row">
+                                    <a href="{% url 'catalog_category' category_slug=subcategory.slug %}" class="sub-item">
+                                        <span class="sub-item-name">{{ subcategory.name }}</span>
+                                        <span class="sub-item-count">{{ subcategory.catalog_product_count }}</span>
+                                    </a>
+                                    {% if subcategory.children.all %}
+                                    <button
+                                        type="button"
+                                        class="nested-subcategory-toggle"
+                                        aria-expanded="false"
+                                        aria-controls="nested-subcategories-{{ subcategory.pk }}"
+                                        aria-label="Показать подкатегории: {{ subcategory.name }}"
+                                    >
+                                        <i class="fas fa-chevron-down nested-subcategory-chevron" aria-hidden="true"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% if subcategory.children.all %}
+                                <div class="nested-subcategory-list" id="nested-subcategories-{{ subcategory.pk }}">
+                                    {% for nested_category in subcategory.children.all %}
+                                    <a href="{% url 'catalog_category' category_slug=nested_category.slug %}" class="nested-subcategory-item {% if current_category.slug == nested_category.slug %}active{% endif %}">
+                                        <span>{{ nested_category.name }}</span>
+                                        <span class="nested-subcategory-count">{{ nested_category.catalog_product_count }}</span>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </li>
+                    </ul>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {# Mobile Filters Toggle Button #}
+        <div class="mobile-filters-toggle" id="mobileFiltersToggle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            Показать фильтры и сортировку
+        </div>
+
+        {# Filters Section #}
+        <form method="get" id="product-filters-form">
+            <div class="filter-block" id="filtersBlock">
+            <div class="filter-block-header-with-controls">
+                <div class="filter-title-group">
+                    <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z"></path></svg>
+                    <h4>Фильтры</h4>
+                    {% if selected_brands_slugs %}
+                        <span class="active-filter-count">{{ selected_brands_slugs|length }}</span>
+                    {% endif %}
+                </div>
+                {% if request.GET %}
+                    <a href="{% url 'catalog' %}{% if current_category %}?category_slug={{ current_category.slug }}{% endif %}" class="reset-filters-btn">Сбросить</a>
+                {% endif %}
+            </div>
+
+                {# Sort Control #}
+                <div class="filter-group mb-4">
+                    <h6 class="filter-group-header">Сортировка</h6>
+                    <select id="sort-by" name="sort_by" class="filter-select sort-select-native" aria-hidden="true" tabindex="-1">
+                        <option value="popularity" {% if request.GET.sort_by == 'popularity' or not request.GET.sort_by %}selected{% endif %}>Сначала популярные</option>
+                        <option value="price_asc" {% if request.GET.sort_by == 'price_asc' %}selected{% endif %}>Сначала дешевые</option>
+                        <option value="price_desc" {% if request.GET.sort_by == 'price_desc' %}selected{% endif %}>Сначала дорогие</option>
+                        <option value="newest" {% if request.GET.sort_by == 'newest' %}selected{% endif %}>Сначала новые</option>
+                    </select>
+                    <div class="sort-select-custom" data-sort-select>
+                        <button type="button" class="sort-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span class="sort-select-value">Сначала популярные</span>
+                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                        </button>
+                        <div class="sort-select-menu" role="listbox" tabindex="-1">
+                            <button type="button" role="option" data-value="popularity">Сначала популярные</button>
+                            <button type="button" role="option" data-value="price_asc">Сначала дешевые</button>
+                            <button type="button" role="option" data-value="price_desc">Сначала дорогие</button>
+                            <button type="button" role="option" data-value="newest">Сначала новые</button>
+                        </div>
+                    </div>
+                </div>
+
+                {# Price Filter #}
+                <div class="filter-group mb-4">
+                    <h6 class="filter-group-header">Цена, ₽</h6>
+                    <div class="filter-price-inputs">
+                        <input type="number" name="min_price" placeholder="от" class="price-input" value="{{ request.GET.min_price|default:'' }}">
+                        <span>-</span>
+                        <input type="number" name="max_price" placeholder="до" class="price-input" value="{{ request.GET.max_price|default:'' }}">
+                    </div>
+                    <div id="price-slider"></div>
+                </div>
+
+                {# Brand Filter #}
+                <div class="filter-group mb-4">
+                    <h6 class="filter-group-header">Бренд</h6>
+                    <div class="filter-brand-list">
+                        {% for brand in brands_with_counts %}
+                        <label class="custom-checkbox-label">
+                            <input type="checkbox" name="brand" value="{{ brand.brand__slug }}" class="custom-checkbox-input" {% if brand.brand__slug in selected_brands_slugs %}checked{% endif %}>
+                            <span class="custom-checkbox-box" style="--brand-color: {{ brand.brand__color|default:'#ccc' }};">
+                                <span class="custom-checkbox-check">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M7 13l3 3 7-7" />
+                                    </svg>
+                                </span>
+                            </span>
+                            <span class="checkbox-text">{{ brand.brand__name }}</span>
+                            <span class="checkbox-count" style="--brand-color: {{ brand.brand__color|default:'#ccc' }};">{{ brand.count }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-apply-filters">Применить фильтры</button>
+
+            </div>
+        </form>
+    </aside>
+
+    {# 2. Main Content #}
+    <main class="catalog-main-content">
+        <div class="catalog-top-bar">
+            <div class="page-title" style="gap: 12px;">
+                <h1>{% if current_category %}{{ current_category.name }}{% else %}Весь каталог{% endif %}</h1>
+                <span class="product-count">{{ products.paginator.count|intcomma }} товар{{ products.paginator.count|pluralize:"а,ов" }}</span>
+            </div>
+            {# catalog-sort-control removed from here #}
+        </div>
+
+        {# Active Filters Display #}
+        {% if selected_brands %}
+        <div class="active-filters-bar">
+            <span class="bar-title">Активные фильтры:</span>
+            <div class="active-filters-list">
+                {% for brand in selected_brands %}
+                <div class="active-filter-pill" style="--brand-color: {{ brand.color|default:'#ccc' }};" data-brand-slug="{{ brand.slug }}">
+                    <span>{{ brand.name }}</span>
+                    <button type="button" class="remove-filter-btn" data-brand-slug="{{ brand.slug }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'catalog' %}" class="clear-all-filters">Очистить все</a>
+        </div>
+        {% endif %}
+
+        {# Breadcrumbs can stay if desired, they are conventional #}
+        {% if breadcrumbs %}
+        <nav aria-label="breadcrumb" style="margin-bottom: 1.5rem;">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'catalog' %}">Каталог</a></li>
+                {% for crumb in breadcrumbs %}
+                    {% if forloop.last %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ crumb.name }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item"><a href="{% url 'catalog_category' category_slug=crumb.slug %}">{{ crumb.name }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </nav>
+        {% endif %}
+
+        {% if current_category_children %}
+        <div class="category-child-tiles" aria-label="Подкатегории">
+            {% for child_category in current_category_children %}
+            <a href="{% url 'catalog_category' category_slug=child_category.slug %}" class="category-child-tile{% if forloop.counter > 6 %} category-child-tile--hidden{% endif %}">
+                <span class="category-child-tile-name">{{ child_category.name }}</span>
+                <span class="category-child-tile-meta">
+                    <span class="category-child-tile-count">{{ child_category.catalog_product_count }}</span>
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+        {% if current_category_children|length > 6 %}
+        <button type="button" class="category-child-tiles-toggle" aria-expanded="false">
+            <span class="category-child-tiles-toggle-label">Показать все подкатегории</span>
+            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        </button>
+        {% endif %}
+        {% endif %}
+
+        {# Product Grid #}
+        <div class="product-grid">
+            {% for product in products %}
+            <div class="product-card">
+                <div class="product-card-image-wrapper">
+                    <div class="product-card-badges">
+                        {% if product.quantity <= 0 %}<span class="badge" style="background: #3B82F6; color: white;">ПОД ЗАКАЗ</span>{% endif %}
+                        {% if product.is_hit %}<span class="badge hit">ХИТ</span>{% endif %}
+                        {% if product.is_new %}<span class="badge new">НОВИНКА</span>{% endif %}
+                        {% if product.discount_percentage > 0 %}<span class="badge discount">-{{ product.discount_percentage }}%</span>{% endif %}
+                    </div>
+
+                    <a href="{{ product.get_absolute_url }}">
+                        {% if product.images.first %}
+                            <img src="{{ product.images.first.image.url }}" alt="{{ product.title }}" class="product-image" loading="lazy">
+                        {% else %}
+                            <img src="{% static 'app/content/logo.png' %}" alt="No image available" class="product-image" style="opacity: 0.5;">
+                        {% endif %}
+                    </a>
+                    
+                    <button class="quick-view-btn" data-product-id="{{ product.id }}">Быстрый просмотр</button>
+
+                    <button class="favorite-btn {% if product.id in favorite_product_ids %}is-favorite{% endif %}" data-product-id="{{ product.id }}" title="В избранное" style="position: absolute; top: 10px; right: 10px; z-index: 6;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-heart"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    </button>
+                    
+                    <button class="compare-btn {% if product.id in comparison_product_ids %}is-in-compare{% endif %}" data-product-id="{{ product.id }}" title="К сравнению" style="position: absolute; top: 52px; right: 10px; z-index: 6;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    </button>
+                </div>
+                <div class="product-card-info">
+                    {% if product.brand %}
+                    <a href="{{ product.brand.get_absolute_url }}" class="product-card-brand">{{ product.brand.name|upper }}</a>
+                    {% endif %}
+                    <div class="product-card-rating">
+                        {% with avg_rating=product.average_rating|default:0 %}
+                            {% for i in 5|get_range %}
+                                <svg class="star-icon {% if i < avg_rating %}filled{% else %}empty{% endif %}" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.431 8.216 1.191-5.945 5.795 1.403 8.175L12 18.896l-7.342 3.868 1.403-8.175L.116 9.209l8.216-1.191L12 .587z"/></svg>
+                            {% endfor %}
+                            <span class="reviews">({{ product.reviews_count }})</span>
+                        {% endwith %}
+                    </div>
+                    <a href="{{ product.get_absolute_url }}" class="product-card-title-link">
+                        <h3 class="product-card-title">{{ product.title }}</h3>
+                    </a>
+
+                    <div class="product-card-bottom">
+                        <div class="product-card-price">
+                            {% if product.old_price and product.old_price > product.price %}
+                                <span class="old-price">{{ product.old_price|format_price }} ₽</span>
+                            {% endif %}
+                            <span class="current-price">{{ product.price|format_price }} ₽</span>
+                        </div>
+                        {% if product.quantity > 0 %}
+                        <button class="add-to-cart-plus-btn" data-product-id="{{ product.id }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        {% else %}
+                        <div class="preorder-action-container" style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 11px; color: #3b82f6; font-weight: 700; line-height: 1.2; text-align: right; max-width: 85px;">МОЖНО КУПИТЬ ПОД ЗАКАЗ</span>
+                            <button class="add-to-cart-plus-btn" data-product-id="{{ product.id }}" style="background-color: #3b82f6; border-color: #3b82f6; color: white; opacity: 1; cursor: pointer;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="empty-state" style="text-align: center; padding: 3rem 1rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h4 style="color: #6c757d; margin-bottom: 0.5rem;">Товары не найдены</h4>
+                    <p style="color: #999; margin-bottom: 1.5rem;">Попробуйте изменить фильтры или поисковый запрос</p>
+                    <a href="{% url 'catalog' %}" class="btn btn-primary">Сбросить фильтры</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {# Pagination #}
+        {% if products.has_other_pages %}
+        <nav aria-label="Навигация по страницам" class="catalog-pagination">
+            <ul class="pagination-list">
+                {% if products.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ products.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" title="Предыдущая страница"><i class="fas fa-chevron-left"></i></a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>
+                {% endif %}
+
+                {% for num in products.paginator.page_range %}
+                    {% if products.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num == 1 or num == products.paginator.num_pages %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a></li>
+                    {% elif num == products.number|add:'-3' or num == products.number|add:'3' %}
+                        <li class="page-item disabled"><span class="page-link dots">...</span></li>
+                    {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if products.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ products.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" title="Следующая страница"><i class="fas fa-chevron-right"></i></a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </main>
+</div>
+{% endblock full_width_content %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Subcategory dropdown and mobile tap logic
+    const categoryItems = document.querySelectorAll('.sidebar-categories .has-children');
+    
+    // Create mobile overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'mobile-menu-overlay';
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', () => {
+        document.querySelectorAll('.show-submenu-mobile').forEach(el => el.classList.remove('show-submenu-mobile'));
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    });
+
+    categoryItems.forEach(item => {
+        let submenuCloseTimer;
+        const submenu = item.querySelector('.subcategory-list');
+        const cancelSubmenuClose = () => window.clearTimeout(submenuCloseTimer);
+        const scheduleSubmenuClose = () => {
+            if (window.innerWidth <= 991 || item.classList.contains('submenu-pinned')) return;
+            submenuCloseTimer = window.setTimeout(() => {
+                item.classList.remove('show-submenu');
+            }, 20);
+        };
+
+        // Desktop hover
+        item.addEventListener('mouseenter', () => {
+            if (window.innerWidth > 991) {
+                cancelSubmenuClose();
+                document.querySelectorAll('.category-item.show-submenu').forEach(openItem => {
+                    if (openItem !== item) openItem.classList.remove('show-submenu', 'submenu-pinned');
+                });
+                item.classList.add('show-submenu');
+            }
+        });
+        item.addEventListener('mouseleave', scheduleSubmenuClose);
+        if (submenu) {
+            submenu.addEventListener('mouseenter', cancelSubmenuClose);
+            submenu.addEventListener('mouseleave', scheduleSubmenuClose);
+        }
+
+        // Mobile tap
+        const link = item.querySelector('a');
+        if (link) {
+            link.addEventListener('click', (e) => {
+                if (window.innerWidth <= 991) {
+                    if (!item.classList.contains('show-submenu-mobile')) {
+                        e.preventDefault(); // First tap: show submenu, don't navigate
+                        
+                        // Close others
+                        document.querySelectorAll('.show-submenu-mobile').forEach(el => {
+                            if (el !== item) el.classList.remove('show-submenu-mobile');
+                        });
+                        
+                        item.classList.add('show-submenu-mobile');
+                        overlay.classList.add('active');
+                        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                    }
+                    // If it already has 'show-submenu-mobile', the second tap will pass through and navigate
+                }
+            });
+        }
+    });
+
+    document.querySelectorAll('.has-nested-subcategories > .sub-item-row > .nested-subcategory-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const group = button.closest('.has-nested-subcategories');
+            const parentMenu = button.closest('.category-item');
+            const shouldOpen = !group.classList.contains('nested-open');
+
+            if (parentMenu && window.innerWidth > 991) {
+                parentMenu.classList.add('submenu-pinned', 'show-submenu');
+            }
+
+            if (shouldOpen && window.innerWidth <= 991) {
+                document.querySelectorAll('.has-nested-subcategories.nested-open').forEach(openGroup => {
+                    if (openGroup === group) return;
+                    openGroup.classList.remove('nested-open');
+                    const openButton = openGroup.querySelector('.nested-subcategory-toggle');
+                    if (openButton) openButton.setAttribute('aria-expanded', 'false');
+                });
+            }
+
+            group.classList.toggle('nested-open', shouldOpen);
+            button.setAttribute('aria-expanded', String(shouldOpen));
+        });
+    });
+
+    // Progressive disclosure for long child-category lists
+    document.querySelectorAll('.category-child-tiles-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const tiles = button.previousElementSibling;
+            const expanded = tiles.classList.toggle('category-child-tiles--expanded');
+            button.setAttribute('aria-expanded', String(expanded));
+            button.querySelector('.category-child-tiles-toggle-label').textContent = expanded
+                ? 'Скрыть подкатегории'
+                : 'Показать все подкатегории';
+            button.querySelector('i').classList.toggle('fa-chevron-up', expanded);
+            button.querySelector('i').classList.toggle('fa-chevron-down', !expanded);
+        });
+    });
+
+    // Mobile Filters Toggle
+    const mobileFiltersToggle = document.getElementById('mobileFiltersToggle');
+    const filtersBlock = document.getElementById('filtersBlock');
+    
+    if (mobileFiltersToggle && filtersBlock) {
+        mobileFiltersToggle.addEventListener('click', function() {
+            filtersBlock.classList.toggle('show-mobile');
+            if (filtersBlock.classList.contains('show-mobile')) {
+                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Скрыть фильтры';
+            } else {
+                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Показать фильтры и сортировку';
+            }
+        });
+    }
+
+    // CSRF Token function
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Compare button logic
+    document.querySelectorAll('.compare-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const svg = this.querySelector('svg');
+            if (!svg) return;
+
+            const productId = this.dataset.productId;
+            
+            fetch('/ajax/compare/toggle/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    svg.classList.toggle('is-in-compare');
+                    if (data.is_in_comparison) {
+                        svg.style.stroke = '#FF6B00';
+                        svg.style.fill = 'rgba(255, 107, 0, 0.1)';
+                        window.showToast('Товар добавлен к сравнению!', 'success');
+                        updateComparisonBar();
+                    } else {
+                        svg.style.stroke = '';
+                        svg.style.fill = '';
+                        window.showToast('Товар удален из сравнения', 'info');
+                        updateComparisonBar();
+                    }
+                } else {
+                    window.showToast(data.message, 'error');
+                }
+            })
+            .catch(() => {
+                window.showToast('Ошибка при обновлении списка сравнения', 'error');
+            });
+        });
+    });
+
+    // Favorite button logic
+    document.querySelectorAll('.favorite-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const productId = this.dataset.productId;
+            
+            // Toggle class on button for consistent styling
+            this.classList.toggle('is-favorite');
+            
+            fetch(`/product/${productId}/toggle_favorite/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({})
+            })
+            .then(response => {
+                if (!response.ok) return Promise.reject(response);
+                return response.json();
+            })
+            .then(data => {
+                if (data.is_favorited) {
+                    window.showToast('Товар добавлен в избранное!', 'success');
+                } else {
+                    window.showToast('Товар удален из избранного!', 'info');
+                }
+            })
+            .catch(() => {
+                // Revert UI on error
+                this.classList.toggle('is-favorite');
+                window.showToast('Ошибка при изменении избранного', 'error');
+            });
+        });
+    });
+
+    // Add-to-cart button logic
+    document.querySelectorAll('.add-to-cart-plus-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const productId = this.dataset.productId;
+            fetch('/ajax/add-to-cart/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ product_id: productId, quantity: 1 })
+            })
+            .then(response => response.ok ? response.json() : Promise.reject(response))
+            .then(data => {
+                if (data.status === 'success') {
+                    const cartBadge = document.getElementById('cart-badge');
+                    if (cartBadge) {
+                        cartBadge.textContent = data.total_items;
+                        if (data.total_items > 0) cartBadge.style.display = 'flex';
+                        
+                        // Trigger pulse animation
+                        cartBadge.classList.add('pulse');
+                        cartBadge.addEventListener('animationend', () => {
+                            cartBadge.classList.remove('pulse');
+                        }, { once: true });
+                    }
+                    window.showToast(data.message, 'success', data.product_title);
+                    const originalSvg = button.innerHTML;
+                    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    button.style.backgroundColor = '#28A745';
+                    setTimeout(() => {
+                        button.innerHTML = originalSvg;
+                        button.style.backgroundColor = '';
+                    }, 1500);
+                } else {
+                    window.showToast(data.message || 'Не удалось добавить товар', 'error');
+                }
+            })
+            .catch(() => alert('Произошла ошибка при добавлении товара в корзину.'));
+        });
+    });
+
+    // Sort dropdown change handler
+    const sortSelect = document.getElementById('sort-by');
+    if(sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('sort_by', this.value);
+            // Instead of reloading, submit the form to include all filters
+            this.form.submit();
+        });
+    }
+
+    const customSort = document.querySelector('[data-sort-select]');
+    if (customSort && sortSelect) {
+        const trigger = customSort.querySelector('.sort-select-trigger');
+        const valueLabel = customSort.querySelector('.sort-select-value');
+        const options = customSort.querySelectorAll('[role="option"]');
+        const syncSortLabel = () => {
+            const selected = sortSelect.options[sortSelect.selectedIndex];
+            if (selected) valueLabel.textContent = selected.textContent;
+            options.forEach(option => option.setAttribute('aria-selected', String(option.dataset.value === sortSelect.value)));
+        };
+        syncSortLabel();
+        trigger.addEventListener('click', () => {
+            const open = customSort.classList.toggle('is-open');
+            trigger.setAttribute('aria-expanded', String(open));
+        });
+        options.forEach(option => option.addEventListener('click', () => {
+            sortSelect.value = option.dataset.value;
+            syncSortLabel();
+            customSort.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+            sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }));
+        document.addEventListener('click', event => {
+            if (!customSort.contains(event.target)) {
+                customSort.classList.remove('is-open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
+    // NEW: Active filter removal logic
+    document.querySelectorAll('.active-filter-pill .remove-filter-btn').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const brandSlugToRemove = this.dataset.brandSlug;
+            const url = new URL(window.location.href);
+            const brandParams = url.searchParams.getAll('brand');
+            url.searchParams.delete('brand'); // Remove all brand params
+
+            brandParams.forEach(slug => {
+                if (slug !== brandSlugToRemove) {
+                    url.searchParams.append('brand', slug); // Add back all except the one to remove
+                }
+            });
+            window.location.href = url.toString(); // Reload page with updated URL
+        });
+    });
+
+    // NEW: Reset filters button logic (sidebar)
+    document.querySelector('.reset-filters-btn')?.addEventListener('click', function(event) {
+        event.preventDefault();
+        {% if current_category %}
+            // If current_category exists, reset filters for that category
+            window.location.href = '{% url "catalog_category" category_slug=current_category.slug %}';
+        {% else %}
+            // Otherwise, go to the main catalog page
+            window.location.href = '{% url "catalog" %}';
+        {% endif %}
+    });
+
+    // Price Slider Logic
+    const slider = document.getElementById('price-slider');
+    if (slider) {
+        const minPriceInput = document.querySelector('input[name="min_price"]');
+        const maxPriceInput = document.querySelector('input[name="max_price"]');
+        
+        const priceRangeMin = {{ price_range_min|default:0 }};
+        const priceRangeMax = {{ price_range_max|default:100000 }};
+
+        // Use current GET params for start, or the full range if not set
+        const startMin = {{ request.GET.min_price|default:price_range_min }};
+        const startMax = {{ request.GET.max_price|default:price_range_max }};
+
+        noUiSlider.create(slider, {
+            start: [startMin, startMax],
+            connect: true,
+            range: {
+                'min': priceRangeMin,
+                'max': priceRangeMax
+            },
+            step: 100, // Or whatever step is appropriate
+            format: {
+                to: function (value) {
+                    return Math.round(value);
+                },
+                from: function (value) {
+                    return Math.round(value);
+                }
+            }
+        });
+
+        // Update input fields when slider changes
+        slider.noUiSlider.on('update', function (values, handle) {
+            if (handle === 0) {
+                minPriceInput.value = values[handle];
+            } else {
+                maxPriceInput.value = values[handle];
+            }
+        });
+
+        // Auto-submit when slider drag stops
+        slider.noUiSlider.on('change', function () {
+            minPriceInput.form.submit();
+        });
+
+        // Update slider and auto-submit when input fields change (e.g. user types and presses Enter or clicks away)
+        minPriceInput.addEventListener('change', function () {
+            slider.noUiSlider.set([this.value, null]);
+            this.form.submit();
+        });
+        maxPriceInput.addEventListener('change', function () {
+            slider.noUiSlider.set([null, this.value]);
+            this.form.submit();
+        });
+    }
+});
+
+function updateComparisonBar() {
+    const bar = document.getElementById('globalComparisonBar');
+    const countEl = document.getElementById('globalComparisonCount');
+    if (!bar || !countEl) return;
+    
+    fetch('/ajax/compare/toggle/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ product_id: 0, check_only: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const count = data.comparison_count || 0;
+        countEl.textContent = count + ' ' + pluralize(count, 'товар', 'товара', 'товаров');
+        if (count > 0) {
+            bar.classList.add('visible');
+        } else {
+            bar.classList.remove('visible');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function pluralize(n, one, few, many) {
+    if (n % 10 === 1 && n % 100 !== 11) return one;
+    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return few;
+    return many;
+}
+
+// Initialize comparison bar on page load
+document.addEventListener('DOMContentLoaded', updateComparisonBar);
+document.addEventListener('DOMContentLoaded', updateComparisonBar);
+</script>
+
+<style>
+.compare-btn.is-in-compare svg {
+    stroke: #FF6B00;
+    fill: rgba(255, 107, 0, 0.15);
+}
+</style>
+{% endblock %}

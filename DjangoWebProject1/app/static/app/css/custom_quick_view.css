@@ -1,0 +1,27 @@
+.modal-img-nav {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.modal-img-dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--theme-border);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal-img-dot.active {
+    background-color: var(--theme-accent-primary);
+    width: 25px;
+    border-radius: 5px;
+}
+
+.modal-favorite-btn.favorited svg,
+.modal-favorite-btn.is-favorite svg {
+    fill: var(--theme-danger) !important;
+    stroke: var(--theme-danger) !important;
+}
