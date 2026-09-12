@@ -1,3 +1,8 @@
+# Build context contains runtime source only, even with legacy local files present.
+**
+!requirements.txt
+!DjangoWebProject1/
+!DjangoWebProject1/**
 __pycache__/
 *.pyc
 *.pyo

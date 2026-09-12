@@ -1,3 +1,28 @@
+# Only application source and maintained release/quality files belong in Git.
+/*
+!/.gitignore
+!/.dockerignore
+!/.gitattributes
+!/Dockerfile
+!/docker-compose.yml
+!/nginx.conf
+!/requirements.txt
+!/build_release.py
+!/README.md
+!/CONTRIBUTING.md
+!/SECURITY.md
+!/CHANGELOG.md
+!/RELEASE.md
+!/DEPLOYMENT.md
+!/DjangoWebProject1/
+!/tests/
+!/.github/
+/DjangoWebProject1/*
+!/DjangoWebProject1/manage.py
+!/DjangoWebProject1/.env.example
+!/DjangoWebProject1/app/
+!/DjangoWebProject1/DjangoWebProject1/
+
 .env
 .env.*
 !.env.example
@@ -11,3 +36,8 @@ media/
 staticfiles/
 .venv/
 .security/
+*.key
+*.pem
+.aider*
+.gemini/
+.vs/

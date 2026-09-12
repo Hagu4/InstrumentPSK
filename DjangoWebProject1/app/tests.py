@@ -23,18 +23,22 @@ class ViewTest(TestCase):
 
     def test_home(self):
         """Tests the home page."""
-        response = self.client.get('/')
-        self.assertContains(response, 'Home Page', 1, 200)
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'app/index.html')
+        self.assertContains(response, reverse('catalog'))
 
     def test_contact(self):
         """Tests the contact page."""
-        response = self.client.get('/contact')
-        self.assertContains(response, 'Contact', 3, 200)
+        response = self.client.get(reverse('contact'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'app/contact.html')
 
     def test_about(self):
         """Tests the about page."""
-        response = self.client.get('/about')
-        self.assertContains(response, 'About', 3, 200)
+        response = self.client.get(reverse('about'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'app/about.html')
 
 
 class NestedCategoryMenuTest(TestCase):

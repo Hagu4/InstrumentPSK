@@ -5,14 +5,39 @@ on:
     branches: [main, develop, 'feature/**', 'release/**']
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEBUG: 'True'
+      # Isolated test key, never used on the server.
+      SECRET_KEY: ci-only-test-key-not-for-production-0123456789-abcdefghijklmnop
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+          cache: pip
+      - name: Install PDF rendering libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0
       - run: pip install -r requirements.txt
       - run: python DjangoWebProject1/manage.py check
-      - run: python DjangoWebProject1/manage.py test --noinput
+      - name: Django application tests
+        working-directory: DjangoWebProject1
+        run: python manage.py test app --noinput
+      - name: Repository and interface checks
+        run: python -m unittest discover -s tests -v
