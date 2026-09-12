@@ -1,0 +1,1109 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    :root {
+        --compare-primary: #FF6B00;
+        --compare-primary-light: #FFF4ED;
+        --compare-success: #10B981;
+        --compare-danger: #EF4444;
+        --compare-bg: #F8FAFC;
+        --compare-border: #E2E8F0;
+        --compare-text: #1E293B;
+        --compare-text-muted: #64748B;
+        --compare-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --compare-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .comparison-page {
+        padding: 2rem 0;
+        min-height: 70vh;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .comparison-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .comparison-header h1 {
+        font-size: 2.8rem;
+        font-weight: 700;
+        color: var(--compare-text);
+        margin-bottom: 0.75rem;
+    }
+
+    .comparison-header p {
+        color: var(--compare-text-muted);
+        font-size: 1.4rem;
+    }
+
+    /* Floating Comparison Bar */
+    .comparison-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1000;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .comparison-bar.visible {
+        transform: translateY(0);
+    }
+
+    .comparison-bar-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .comparison-bar-icon {
+        width: 50px;
+        height: 50px;
+        background: var(--compare-primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .comparison-bar-text h4 {
+        color: white;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .comparison-bar-text span {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .comparison-bar-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .comparison-bar-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .comparison-bar-btn.primary {
+        background: var(--compare-primary);
+        color: white;
+    }
+
+    .comparison-bar-btn.primary:hover {
+        background: #E55A00;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(255, 107, 0, 0.4);
+    }
+
+    .comparison-bar-btn.secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .comparison-bar-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Empty State */
+    .comparison-empty {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: white;
+        border-radius: 24px;
+        box-shadow: var(--compare-shadow);
+    }
+
+    .comparison-empty-icon {
+        width: 120px;
+        height: 120px;
+        background: var(--compare-primary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2rem;
+        font-size: 3rem;
+        color: var(--compare-primary);
+    }
+
+    .comparison-empty h2 {
+        font-size: 1.8rem;
+        color: var(--compare-text);
+        margin-bottom: 1rem;
+    }
+
+    .comparison-empty p {
+        color: var(--compare-text-muted);
+        max-width: 500px;
+        margin: 0 auto 2rem;
+        line-height: 1.6;
+    }
+
+    .comparison-empty-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 2rem;
+        background: var(--compare-primary);
+        color: white;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .comparison-empty-btn:hover {
+        background: #E55A00;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(255, 107, 0, 0.3);
+        color: white;
+    }
+
+    /* Comparison Table */
+    .comparison-table-wrapper {
+        background: white;
+        border-radius: 24px;
+        box-shadow: var(--compare-shadow-lg);
+        overflow: visible;
+        margin-bottom: 2rem;
+    }
+
+    .comparison-table-header {
+        display: grid;
+        grid-template-columns: 300px repeat(var(--product-count), 1fr);
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        padding: 2.5rem 2rem;
+        gap: 2rem;
+        align-items: start;
+        border-bottom: 3px solid var(--compare-primary);
+    }
+
+    .comparison-table-header .header-cell {
+        color: white;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .comparison-table-header .header-cell:first-child {
+        text-align: left;
+        display: flex;
+        align-items: center;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.4rem;
+        padding-top: 1rem;
+    }
+
+    /* Product Card in Header */
+    .product-header-card {
+        background: white;
+        border-radius: 18px;
+        padding: 1.75rem 1.5rem;
+        text-align: center;
+        transition: all 0.3s;
+        min-height: 420px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        border: 2px solid var(--compare-border);
+    }
+
+    .product-header-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        border-color: var(--compare-primary);
+    }
+
+    .product-header-card .remove-btn {
+        position: absolute;
+        top: -12px;
+        right: -12px;
+        width: 40px;
+        height: 40px;
+        background: var(--compare-danger);
+        color: white;
+        border: 4px solid white;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        transition: all 0.3s;
+        z-index: 10;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    }
+
+    .product-header-card .remove-btn:hover {
+        transform: scale(1.15);
+        background: #DC2626;
+    }
+
+    .product-header-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: contain;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        background: #f8fafc;
+    }
+
+    .product-header-card h4 {
+        font-size: 1.05rem;
+        color: var(--compare-text);
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.8em;
+    }
+
+    .product-header-card .rating {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        margin: 1rem 0;
+    }
+
+    .product-header-card .rating i.fas {
+        color: #FCD34D;
+    }
+
+    .product-header-card .rating i.far {
+        color: #CBD5E1;
+    }
+
+    .product-header-card .rating i {
+        font-size: 1.3rem;
+    }
+
+    .product-header-card .price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--compare-primary);
+    }
+
+    .product-header-card h4 {
+        font-size: 1rem;
+        color: var(--compare-text);
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.8em;
+    }
+
+    .product-header-card .price {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--compare-primary);
+    }
+
+    .product-header-card .old-price {
+        font-size: 1rem;
+        color: var(--compare-text-muted);
+        text-decoration: line-through;
+    }
+
+    .product-header-card .rating {
+        display: flex;
+        justify-content: center;
+        gap: 3px;
+        margin: 0.75rem 0;
+    }
+
+    .product-header-card .rating i.fas {
+        color: #FCD34D;
+    }
+
+    .product-header-card .rating i.far {
+        color: #CBD5E1;
+    }
+
+    .product-header-card .rating i {
+        font-size: 1rem;
+    }
+
+    .product-header-card .btn-view {
+        display: inline-block;
+        width: 100%;
+        padding: 0.75rem;
+        margin-top: 0.75rem;
+        background: var(--compare-primary-light);
+        color: var(--compare-primary);
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+    }
+
+    .product-header-card .btn-view:hover {
+        background: var(--compare-primary);
+        color: white;
+    }
+
+    .product-header-card .btn-add-cart {
+        display: inline-block;
+        width: 100%;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        background: var(--compare-primary);
+        color: white;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .product-header-card .btn-add-cart:hover {
+        background: #E55A00;
+    }
+
+    /* Comparison Table Body */
+    .comparison-table-body {
+        padding: 1.5rem;
+    }
+
+    .comparison-row {
+        display: grid !important;
+        grid-template-columns: 300px repeat(var(--product-count), 1fr);
+        padding: 2rem 1.5rem;
+        border-bottom: 1px solid var(--compare-border);
+        gap: 2rem;
+        transition: background 0.3s;
+        min-height: 90px;
+        align-items: center;
+    }
+
+    .comparison-row:last-child {
+        border-bottom: none;
+    }
+
+    .comparison-row:hover {
+        background: var(--compare-bg);
+    }
+
+    .comparison-row.section-header {
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        padding: 1.25rem 2rem;
+        border-radius: 18px;
+        margin: 2rem 0;
+        border-bottom: none;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .comparison-row.section-header .row-label {
+        font-weight: 700;
+        color: white;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .comparison-row.section-header .row-label i {
+        color: #FF6B00;
+    }
+
+    .row-label {
+        font-weight: 600;
+        color: var(--compare-text);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.3rem;
+    }
+
+    .row-label i {
+        color: var(--compare-primary);
+        width: 24px;
+        text-align: center;
+    }
+
+    .row-value {
+        text-align: center;
+        color: var(--compare-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+    }
+
+    .row-value.highlight {
+        background: var(--compare-primary-light);
+        color: var(--compare-primary);
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .row-value.best {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--compare-success);
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .row-value.worst {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--compare-danger);
+    }
+
+    .row-value.neutral {
+        color: var(--compare-text-muted);
+        font-size: 1.2rem;
+    }
+
+    .best-value-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+        font-weight: 700;
+        font-size: 1.4rem;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem 0.75rem;
+        border: 2px solid rgba(16, 185, 129, 0.5);
+        position: relative;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .best-value-indicator .best-badge {
+        position: absolute;
+        top: -16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 5px 14px;
+        border-radius: 14px;
+        white-space: nowrap;
+        box-shadow: 0 3px 8px rgba(16, 185, 129, 0.5);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .best-value-indicator i {
+        color: #10B981;
+        font-size: 1.3rem;
+    }
+
+    .row-value.best {
+        background: rgba(16, 185, 129, 0.08);
+        color: #059669;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Add to Comparison Card */
+    .add-comparison-card {
+        border: 2px dashed var(--compare-border);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: var(--compare-bg);
+    }
+
+    .add-comparison-card:hover {
+        border-color: var(--compare-primary);
+        background: var(--compare-primary-light);
+    }
+
+    .add-comparison-card i {
+        font-size: 2.5rem;
+        color: var(--compare-text-muted);
+        margin-bottom: 1rem;
+        transition: all 0.3s;
+    }
+
+    .add-comparison-card:hover i {
+        color: var(--compare-primary);
+        transform: scale(1.1);
+    }
+
+    .add-comparison-card span {
+        color: var(--compare-text-muted);
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .add-comparison-card:hover span {
+        color: var(--compare-primary);
+    }
+
+    /* Comparison Actions */
+    .comparison-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.75rem 2.5rem;
+        background: white;
+        border-radius: 18px;
+        margin-top: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 2px solid var(--compare-border);
+    }
+
+    .comparison-actions a {
+        color: var(--compare-primary);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s;
+    }
+
+    .comparison-actions a:hover {
+        color: #E55A00;
+    }
+
+    .btn-clear-all {
+        padding: 0.85rem 1.75rem;
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--compare-danger);
+        border: 2px solid transparent;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s;
+    }
+
+    .btn-clear-all:hover {
+        background: var(--compare-danger);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-clear-all:hover {
+        background: var(--compare-danger);
+        color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .comparison-table-header,
+        .comparison-row {
+            grid-template-columns: 200px repeat(var(--product-count), 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .comparison-table-wrapper {
+            overflow-x: auto;
+        }
+        
+        .comparison-bar {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+        }
+        
+        .comparison-bar-actions {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .comparison-row {
+        animation: slideIn 0.4s ease forwards;
+    }
+
+    .comparison-row:nth-child(1) { animation-delay: 0.05s; }
+    .comparison-row:nth-child(2) { animation-delay: 0.1s; }
+    .comparison-row:nth-child(3) { animation-delay: 0.15s; }
+    .comparison-row:nth-child(4) { animation-delay: 0.2s; }
+    .comparison-row:nth-child(5) { animation-delay: 0.25s; }
+
+    /* Tooltip */
+    .tooltip-icon {
+        color: var(--compare-text-muted);
+        cursor: help;
+        margin-left: 0.25rem;
+    }
+
+    .tooltip-icon:hover {
+        color: var(--compare-primary);
+    }
+
+    /* Availability Badge */
+    .availability-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .availability-badge.in-stock {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--compare-success);
+    }
+
+    .availability-badge.low-stock {
+        background: rgba(245, 158, 11, 0.15);
+        color: #F59E0B;
+    }
+
+    .availability-badge.out-of-stock {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--compare-danger);
+    }
+
+    .availability-badge .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .availability-badge.in-stock .dot { background: var(--compare-success); }
+    .availability-badge.low-stock .dot { background: #F59E0B; }
+    .availability-badge.out-of-stock .dot { background: var(--compare-danger); }
+</style>
+
+<div class="comparison-page">
+    <div class="container">
+        <div class="comparison-header">
+            <h1><i class="fas fa-balance-scale" style="color: var(--compare-primary); margin-right: 0.5rem;"></i> Сравнение товаров</h1>
+            <p>Выберите до 4 товаров для детального сравнения характеристик</p>
+        </div>
+
+        {% if is_empty %}
+        <div class="comparison-empty">
+            <div class="comparison-empty-icon">
+                <i class="fas fa-balance-scale-left"></i>
+            </div>
+            <h2>Список сравнения пуст</h2>
+            <p>Добавьте товары к сравнению, нажав на кнопку "Сравнить" на карточках товаров или на странице товара.</p>
+            <a href="{% url 'catalog' %}" class="comparison-empty-btn">
+                <i class="fas fa-shopping-bag"></i>
+                Перейти в каталог
+            </a>
+        </div>
+        {% else %}
+        
+        <div class="comparison-table-wrapper" id="comparison-table" style="--product-count: {{ products|length }}">
+            <div class="comparison-table-header">
+                <div class="header-cell">
+                    <span style="font-size: 1.1rem; color: white; font-weight: 700;">
+                        <i class="fas fa-list" style="margin-right: 0.5rem; color: #FF6B00;"></i>
+                        Характеристики
+                    </span>
+                </div>
+                {% for product in products %}
+                <div class="header-cell">
+                    <div class="product-header-card">
+                        <button class="remove-btn" onclick="removeFromComparison('{{ product.id }}')" title="Удалить" data-product-id="{{ product.id }}">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                        <a href="{{ product.get_absolute_url }}">
+                            {% with first_image=product.images.first %}
+                            {% if first_image %}
+                                <img src="{{ first_image.image.url }}" alt="{{ product.title }}">
+                            {% else %}
+                                <img src="{% static 'app/content/logo.png' %}" alt="Нет изображения" style="opacity: 0.5;">
+                            {% endif %}
+                            {% endwith %}
+                        </a>
+                        <h4 style="min-height: 3.5em;">{{ product.title }}</h4>
+                        <div class="rating" style="margin: 1rem 0;">
+                            {% with avg_rating=product.average_rating %}
+                            {% if avg_rating and avg_rating > 0 %}
+                                {% with stars=avg_rating|stringformat:"i" %}
+                                {% with star_count=stars|add:0 %}
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= star_count %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                {% endwith %}
+                                {% endwith %}
+                            {% else %}
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div style="font-size: 0.85rem; color: #888; margin-top: 4px;">
+                            ({{ product.reviews.count }} отзывов)
+                        </div>
+                        <div>
+                            {% if product.old_price and product.old_price > product.price %}
+                                <span class="old-price">{{ product.old_price|floatformat:"0"|intcomma }} ₽</span>
+                            {% endif %}
+                            <span class="price">{{ product.price|floatformat:"0"|intcomma }} ₽</span>
+                        </div>
+                        {% if product.quantity > 10 %}
+                            <span class="availability-badge in-stock">
+                                <span class="dot"></span> В наличии
+                            </span>
+                        {% elif product.quantity > 0 %}
+                            <span class="availability-badge low-stock">
+                                <span class="dot"></span> Мало
+                            </span>
+                        {% else %}
+                            <span class="availability-badge out-of-stock">
+                                <span class="dot"></span> Нет
+                            </span>
+                        {% endif %}
+                        <a href="{{ product.get_absolute_url }}" class="btn-view">Подробнее</a>
+                        {% if product.quantity > 0 %}
+                        <form action="{% url 'product_detail' product_id=product.id %}" method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="add_to_cart" value="1">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="btn-add-cart">
+                                <i class="fas fa-cart-plus"></i> В корзину
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="comparison-table-body">
+                {# Basic Info Section #}
+                <div class="comparison-row section-header" data-row="basic">
+                    <div class="row-label">
+                        <i class="fas fa-info-circle"></i>
+                        Основная информация
+                    </div>
+                </div>
+
+                <div class="comparison-row" data-row="brand">
+                    <div class="row-label">
+                        <i class="fas fa-tag"></i>
+                        Бренд
+                    </div>
+                    {% for product in products %}
+                    <div class="row-value {% if product.brand %}{% endif %}">
+                        <a href="{{ product.brand.get_absolute_url }}" style="color: var(--compare-primary); text-decoration: none; font-weight: 600;">
+                            {{ product.brand.name|default:"—" }}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="comparison-row" data-row="category">
+                    <div class="row-label">
+                        <i class="fas fa-folder"></i>
+                        Категория
+                    </div>
+                    {% for product in products %}
+                    <div class="row-value">
+                        {{ product.category.name|default:"—" }}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="comparison-row" data-row="sku">
+                    <div class="row-label">
+                        <i class="fas fa-barcode"></i>
+                        Артикул
+                    </div>
+                    {% for product in products %}
+                    <div class="row-value neutral">
+                        {{ product.sku|default:"—" }}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="comparison-row" data-row="price">
+                    <div class="row-label">
+                        <i class="fas fa-ruble-sign"></i>
+                        Цена
+                    </div>
+                    {% with min_price=min_product_price %}
+                    {% for product in products %}
+                    <div class="row-value {% if product.price == min_price %}best-value-indicator{% endif %}">
+                        {% if product.price == min_price %}
+                        <span class="best-badge"><i class="fas fa-trophy"></i> Лучшая цена</span>
+                        <i class="fas fa-check-circle"></i>
+                        {% endif %}
+                        {{ product.price|floatformat:"0"|intcomma }} ₽
+                    </div>
+                    {% endfor %}
+                    {% endwith %}
+                </div>
+
+                <div class="comparison-row" data-row="availability">
+                    <div class="row-label">
+                        <i class="fas fa-box"></i>
+                        Наличие
+                    </div>
+                    {% with max_qty=max_quantity %}
+                    {% for product in products %}
+                    <div class="row-value">
+                        {% if product.quantity > 10 %}
+                            {% if product.quantity == max_qty and max_qty > 0 %}
+                            <div class="best-value-indicator" style="padding: 1.5rem 1.5rem 0.5rem;">
+                                <span class="best-badge"><i class="fas fa-trophy"></i> Лучшее</span>
+                                <span class="availability-badge in-stock" style="margin-top: 0.5rem;">
+                                    <span class="dot"></span> > 10 шт.
+                                </span>
+                            </div>
+                            {% else %}
+                            <span class="availability-badge in-stock">
+                                <span class="dot"></span> > 10 шт.
+                            </span>
+                            {% endif %}
+                        {% elif product.quantity > 0 %}
+                            {% if product.quantity == max_qty and max_qty > 10 %}
+                            <div class="best-value-indicator" style="padding: 1.5rem 1.5rem 0.5rem;">
+                                <span class="best-badge"><i class="fas fa-trophy"></i> Лучшее</span>
+                                <span class="availability-badge low-stock" style="margin-top: 0.5rem;">
+                                    <span class="dot"></span> {{ product.quantity }} шт.
+                                </span>
+                            </div>
+                            {% else %}
+                            <span class="availability-badge low-stock">
+                                <span class="dot"></span> {{ product.quantity }} шт.
+                            </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="availability-badge out-of-stock">
+                                <span class="dot"></span> Нет в наличии
+                            </span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% endwith %}
+                </div>
+
+                <div class="comparison-row" data-row="rating">
+                    <div class="row-label">
+                        <i class="fas fa-star"></i>
+                        Рейтинг
+                    </div>
+                    {% for product in products %}
+                    <div class="row-value">
+                        {% with rating=product.average_rating %}
+                        {% if rating and rating > 0 %}
+                            {% with stars=rating|stringformat:"i" %}
+                            {% with star_count=stars|add:0 %}
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= star_count %}
+                                    <i class="fas fa-star" style="color: #FCD34D;"></i>
+                                {% else %}
+                                    <i class="fas fa-star" style="color: #CBD5E1;"></i>
+                                {% endif %}
+                            {% endfor %}
+                            {% endwith %}
+                            {% endwith %}
+                        {% else %}
+                            <span style="color: #999;">—</span>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {# Technical Specs Section #}
+                {% if comparison_categories %}
+                <div class="comparison-row section-header specs-header" data-row="specs">
+                    <div class="row-label">
+                        <i class="fas fa-cogs"></i>
+                        Технические характеристики
+                    </div>
+                </div>
+
+                {% for category in comparison_categories %}
+                <div class="comparison-row" data-row="{{ category.name }}" data-differentiable="true">
+                    <div class="row-label">
+                        <i class="fas fa-list"></i>
+                        {{ category.name }}
+                    </div>
+                    {% for val in category.values %}
+                    <div class="row-value" data-value="{{ val.value }}">
+                        {% if val.is_best %}
+                        <div class="best-value-indicator">
+                            <span class="best-badge"><i class="fas fa-trophy"></i> Лучшее</span>
+                            <i class="fas fa-check-circle"></i>
+                            {{ val.value }}
+                        </div>
+                        {% else %}
+                        {{ val.value }}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {# Description Section #}
+                <div class="comparison-row section-header" data-row="description">
+                    <div class="row-label">
+                        <i class="fas fa-align-left"></i>
+                        Описание
+                    </div>
+                </div>
+
+                <div class="comparison-row" data-row="description">
+                    <div class="row-label">
+                        <i class="fas fa-file-alt"></i>
+                        Описание товара
+                    </div>
+                    {% for product in products %}
+                    <div class="row-value neutral" style="text-align: left; justify-content: flex-start;">
+                        <span style="display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.9rem; line-height: 1.5;">
+                            {{ product.description|truncatechars:300|default:"—" }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="comparison-actions">
+            <a href="{% url 'catalog' %}">
+                <i class="fas fa-plus"></i>
+                Добавить ещё товары
+            </a>
+            <button class="btn-clear-all" onclick="clearComparison()">
+                <i class="fas fa-undo"></i>
+                Очистить список
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function removeFromComparison(productId) {
+    fetch('/ajax/compare/toggle/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ product_id: productId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert(data.message || 'Ошибка при удалении');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при удалении товара');
+    });
+}
+
+function clearComparison() {
+    fetch('/ajax/compare/clear/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при очистке списка');
+    });
+}
+</script>
+{% endblock %}

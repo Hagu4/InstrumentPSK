@@ -1,0 +1,660 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+    :root {
+        --analytics-primary: #FF6B00;
+        --analytics-success: #10B981;
+        --analytics-danger: #EF4444;
+        --analytics-bg: #F8FAFC;
+        --analytics-border: #E2E8F0;
+        --analytics-text: #1E293B;
+        --analytics-text-muted: #64748B;
+    }
+
+    .analytics-page {
+        padding: 2rem 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .analytics-header {
+        margin-bottom: 2rem;
+    }
+
+    .analytics-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--analytics-text);
+        margin-bottom: 0.5rem;
+    }
+
+    .analytics-header p {
+        color: var(--analytics-text-muted);
+        font-size: 1.1rem;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: 1px solid var(--analytics-border);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .stat-card-icon.revenue { background: rgba(255, 107, 0, 0.1); color: #FF6B00; }
+    .stat-card-icon.orders { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+    .stat-card-icon.avg { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+    .stat-card-icon.users { background: rgba(139, 92, 246, 0.1); color: #8B5CF6; }
+    .stat-card-icon.conversion { background: rgba(236, 72, 153, 0.1); color: #EC4899; }
+
+    .stat-card-change {
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
+    }
+
+    .stat-card-change.positive {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .stat-card-change.negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+
+    .stat-card-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--analytics-text);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-card-label {
+        font-size: 0.9rem;
+        color: var(--analytics-text-muted);
+    }
+
+    /* Charts Section */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--analytics-border);
+    }
+
+    .chart-card.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .chart-card h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--analytics-text);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .chart-card h3 i {
+        color: var(--analytics-primary);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .chart-container.tall {
+        height: 350px;
+    }
+
+    /* Top Lists */
+    .top-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .top-list-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--analytics-border);
+    }
+
+    .top-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .top-list-rank {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #FF6B00 0%, #E55A00 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        margin-right: 1rem;
+    }
+
+    .top-list-rank.gold { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); }
+    .top-list-rank.silver { background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%); }
+    .top-list-rank.bronze { background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%); }
+
+    .top-list-info {
+        flex: 1;
+    }
+
+    .top-list-title {
+        font-weight: 600;
+        color: var(--analytics-text);
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .top-list-value {
+        font-size: 0.85rem;
+        color: var(--analytics-text-muted);
+    }
+
+    .top-list-stats {
+        text-align: right;
+    }
+
+    .top-list-count {
+        font-weight: 700;
+        color: var(--analytics-primary);
+        font-size: 1.1rem;
+    }
+
+    .top-list-revenue {
+        font-size: 0.8rem;
+        color: var(--analytics-text-muted);
+    }
+
+    /* Period Tabs */
+    .period-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .period-tab {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: none;
+        background: var(--analytics-bg);
+        color: var(--analytics-text-muted);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .period-tab.active {
+        background: var(--analytics-primary);
+        color: white;
+    }
+
+    .period-tab:hover:not(.active) {
+        background: var(--analytics-border);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .analytics-header h1 {
+            font-size: 1.5rem;
+        }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .stat-card, .chart-card {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.15s; }
+    .stat-card:nth-child(3) { animation-delay: 0.2s; }
+    .stat-card:nth-child(4) { animation-delay: 0.25s; }
+    .stat-card:nth-child(5) { animation-delay: 0.3s; }
+</style>
+
+<div class="analytics-page">
+    <div class="container">
+        <div class="analytics-header">
+            <h1><i class="fas fa-chart-line" style="color: var(--analytics-primary); margin-right: 0.5rem;"></i> Аналитика продаж</h1>
+            <p>Статистика и метрики интернет-магазина "InstrumentPSK"</p>
+        </div>
+
+        <!-- Main Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon revenue">
+                        <i class="fas fa-ruble-sign"></i>
+                    </div>
+                    <span class="stat-card-change {% if revenue_change >= 0 %}positive{% else %}negative{% endif %}">
+                        {% if revenue_change >= 0 %}<i class="fas fa-arrow-up"></i>{% else %}<i class="fas fa-arrow-down"></i>{% endif %}
+                        {{ revenue_change|floatformat:1 }}%
+                    </span>
+                </div>
+                <div class="stat-card-value">{{ revenue_last_30_days|floatformat:0|intcomma }} ₽</div>
+                <div class="stat-card-label">Выручка за 30 дней <span style="color: #64748B; font-size: 0.8em;">(к прошлому периоду)</span></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon orders">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <span class="stat-card-change {% if order_count_change >= 0 %}positive{% else %}negative{% endif %}">
+                        {% if order_count_change >= 0 %}<i class="fas fa-arrow-up"></i>{% else %}<i class="fas fa-arrow-down"></i>{% endif %}
+                        {{ order_count_change|floatformat:1 }}%
+                    </span>
+                </div>
+                <div class="stat-card-value">{{ order_count_last_30 }}</div>
+                <div class="stat-card-label">Заказов за 30 дней <span style="color: #64748B; font-size: 0.8em;">(к прошлому периоду)</span></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon avg">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                </div>
+                <div class="stat-card-value">{{ avg_order_value|floatformat:0|intcomma }} ₽</div>
+                <div class="stat-card-label">Средний чек</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon conversion">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                </div>
+                <div class="stat-card-value">{{ conversion_rate|floatformat:1 }}%</div>
+                <div class="stat-card-label">Конверсия в заказ</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="stat-card-value">{{ total_users }}</div>
+                <div class="stat-card-label">Всего пользователей</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon users" style="background: rgba(16, 185, 129, 0.1); color: #10B981;">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                </div>
+                <div class="stat-card-value">+{{ new_users_30_days }}</div>
+                <div class="stat-card-label">Новых пользователей (30 дней)</div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="charts-grid">
+            <div class="chart-card full-width">
+                <h3><i class="fas fa-chart-bar"></i> Динамика продаж за 30 дней</h3>
+                <div class="chart-container tall">
+                    <canvas id="dailySalesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-pie"></i> Статусы заказов</h3>
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-pie"></i> Способы оплаты</h3>
+                <div class="chart-container">
+                    <canvas id="paymentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 3 -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3><i class="fas fa-trophy"></i> Топ-10 товаров по продажам</h3>
+                <ul class="top-list">
+                    {% for product in top_products_list %}
+                    <li class="top-list-item">
+                        <span class="top-list-rank {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">{{ forloop.counter }}</span>
+                        <div class="top-list-info">
+                            <div class="top-list-title">{{ product.title }}</div>
+                            <div class="top-list-value">продано: {{ product.total_sold }} шт.</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="chart-card">
+                <h3><i class="fas fa-chart-bar"></i> Топ категорий</h3>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 4 -->
+        <div class="charts-grid">
+            <div class="chart-card full-width">
+                <h3><i class="fas fa-chart-line"></i> Продажи по месяцам (12 месяцев)</h3>
+                <div class="chart-container">
+                    <canvas id="monthlySalesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Common chart options
+    Chart.defaults.font.family = "'Segoe UI', 'Roboto', sans-serif";
+    Chart.defaults.color = '#64748B';
+
+    // Daily Sales Chart
+    const dailyCtx = document.getElementById('dailySalesChart').getContext('2d');
+    new Chart(dailyCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ daily_labels|safe }},
+            datasets: [{
+                label: 'Выручка (₽)',
+                data: {{ daily_revenue }},
+                backgroundColor: 'rgba(255, 107, 0, 0.8)',
+                borderColor: '#FF6B00',
+                borderWidth: 1,
+                borderRadius: 6,
+                yAxisID: 'y'
+            }, {
+                label: 'Количество заказов',
+                data: {{ daily_count }},
+                type: 'line',
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Выручка (₽)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Заказы'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ status_labels|safe }},
+            datasets: [{
+                data: {{ status_counts }},
+                backgroundColor: {{ status_colors|safe }},
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15
+                    }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+
+    // Payment Methods Chart
+    const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+    new Chart(paymentCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ payment_labels|safe }},
+            datasets: [{
+                data: {{ payment_counts }},
+                backgroundColor: [
+                    '#FF6B00',
+                    '#3B82F6',
+                    '#10B981'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15
+                    }
+                }
+            }
+        }
+    });
+
+    // Category Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ category_labels|safe }},
+            datasets: [{
+                label: 'Продано шт.',
+                data: {{ category_sold }},
+                backgroundColor: [
+                    'rgba(255, 107, 0, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(236, 72, 153, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(20, 184, 166, 0.8)',
+                    'rgba(99, 102, 241, 0.8)'
+                ],
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Monthly Sales Chart
+    const monthlyCtx = document.getElementById('monthlySalesChart').getContext('2d');
+    new Chart(monthlyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ monthly_labels|safe }},
+            datasets: [{
+                label: 'Выручка (₽)',
+                data: {{ monthly_revenue }},
+                borderColor: '#FF6B00',
+                backgroundColor: 'rgba(255, 107, 0, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#FF6B00',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ₽';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

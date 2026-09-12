@@ -1,0 +1,136 @@
+{% extends "app/profile_base.html" %}
+{% load static %}
+{% load auth_extras %}
+
+{% block profile_content %}
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/orders.css' %}?v=3" />
+<h1 style="font-weight: 800; color: #0f172a; margin-bottom: 2rem;">Мои заказы</h1>
+
+{% if orders %}
+    <div class="order-list">
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-card-header">
+                <div class="order-id-date">
+                    <span class="order-id">Заказ №{{ order.id }}</span>
+                    <span class="order-date">от {{ order.order_date|default:order.created_at|date:"d.m.Y" }}</span>
+                </div>
+                <div class="order-total-price">
+                    {{ order.total_price|floatformat:"0" }} ₽
+                </div>
+            </div>
+
+            <div class="order-card-content">
+                <div class="order-badges-row">
+                    {% if order.status == 'COMPLETED' %}
+                        <span class="status-badge status-green"><i class="fas fa-check-circle"></i> {{ order.get_status_display }}</span>
+                    {% elif order.status == 'CANCELLED' %}
+                        <span class="status-badge status-red"><i class="fas fa-times-circle"></i> {{ order.get_status_display }}</span>
+                    {% elif order.status == 'CREATED' %}
+                        <span class="status-badge" style="background-color: #E0F2FE; color: #0369A1;"><i class="fas fa-box"></i> {{ order.get_status_display }}</span>
+                    {% else %}
+                        <span class="status-badge status-gray">{{ order.get_status_display }}</span>
+                    {% endif %}
+
+                    {% comment %} Pre-order badge {% endcomment %}
+                    {% for item in order.items.all %}
+                        {% if item.is_preorder %}
+                            {% if forloop.first %}
+                            <span class="status-badge" style="background-color: #F0F7FF; color: #2563EB; border: 1px solid #BFDBFE;">
+                                <i class="fas fa-clock"></i> Под заказ
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if order.items.all %}
+                <div class="order-product-previews">
+                    {% for item in order.items.all|slice:":4" %}
+                        {% with first_image=item.product.images.first %}
+                            {% if first_image %}
+                                <img src="{{ first_image.image.url }}" alt="{{ item.product.title }}" class="product-image-sm">
+                            {% else %}
+                                <img src="{% static 'app/content/logo.png' %}" alt="No image available" class="product-image-sm" style="opacity: 0.5;">
+                            {% endif %}
+                        {% endwith %}
+                    {% endfor %}
+                    {% if order.items.all|length > 4 %}
+                        <div class="product-more-indicator">
+                            +{{ order.items.all|length|add:"-4" }}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="order-card-footer">
+                {% if order.id in cancellation_deadlines %}
+                    <div class="cancel-wrapper" id="cancel-wrap-{{ order.id }}">
+                        <small class="countdown-timer" data-deadline="{{ cancellation_deadlines|get_item:order.id }}" data-order-id="{{ order.id }}">
+                            <i class="fas fa-hourglass-half"></i> <span id="timer-{{ order.id }}">--:--</span>
+                        </small>
+                        <a href="{% url 'cancel_order' order.id %}" class="btn-cancel-custom cancel-btn-{{ order.id }}" onclick="return confirm('Вы уверены, что хотите отменить этот заказ?');">Отменить</a>
+                    </div>
+                {% endif %}
+
+                <div class="order-actions-right">
+                    <a href="{% url 'order_detail' order.id %}" class="order-details-link">
+                        <span>Подробнее о заказе</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+
+                    {% if order.status == 'COMPLETED' %}
+                        <a href="{% url 'reorder' order.id %}" class="btn-order-action">Повторить заказ</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state" style="text-align: center; padding: 4rem 1rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;">
+            <i class="fas fa-box-open"></i>
+        </div>
+        <h4 style="color: #6c757d; margin-bottom: 0.5rem;">Заказов пока нет</h4>
+        <p style="color: #999; margin-bottom: 1.5rem;">Сделайте первый заказ в нашем магазине</p>
+        <a href="{% url 'catalog' %}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const timers = document.querySelectorAll('.countdown-timer');
+
+    timers.forEach(timerEl => {
+        const deadline = new Date(timerEl.dataset.deadline);
+        const orderId = timerEl.dataset.orderId;
+        const timerSpan = document.getElementById('timer-' + orderId);
+        const cancelWrapper = document.getElementById('cancel-wrap-' + orderId);
+
+        const interval = setInterval(() => {
+            const now = new Date();
+            const remaining = deadline - now;
+
+            if (remaining <= 0) {
+                clearInterval(interval);
+                if (cancelWrapper) {
+                    cancelWrapper.style.display = 'none';
+                }
+                return;
+            }
+
+            const minutes = Math.floor((remaining / 1000 / 60) % 60);
+            const seconds = Math.floor((remaining / 1000) % 60);
+
+            timerSpan.textContent =
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    });
+});
+</script>
+{% endblock %}

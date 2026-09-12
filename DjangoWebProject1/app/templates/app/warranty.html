@@ -1,0 +1,344 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% block content %}
+<div class="info-page">
+    <div class="container">
+        <h1>Гарантия</h1>
+        
+        <div class="info-content">
+            <section class="info-section">
+                <h2>Гарантийные обязательства</h2>
+                <p>На весь ассортимент интернет-магазина "InstrumentPSK" распространяется гарантия производителя. Мы являемся официальным дилером ведущих брендов и предоставляем гарантию на все товары.</p>
+            </section>
+
+            <section class="info-section">
+                <h2>Срок гарантии</h2>
+                
+                <div class="warranty-grid">
+                    <div class="warranty-card">
+                        <div class="warranty-value">12</div>
+                        <div class="warranty-label">месяцев</div>
+                        <p>Стандартная гарантия на большинство товаров</p>
+                    </div>
+                    <div class="warranty-card">
+                        <div class="warranty-value">24</div>
+                        <div class="warranty-label">месяца</div>
+                        <p>Расширенная гарантия на профессиональный инструмент</p>
+                    </div>
+                    <div class="warranty-card">
+                        <div class="warranty-value">3</div>
+                        <div class="warranty-label">года</div>
+                        <p>Гарантия от производителя на отдельные бренды</p>
+                    </div>
+                </div>
+                
+                <p class="warranty-note">Точный срок гарантии указан в карточке каждого товара и в гарантийном талоне.</p>
+            </section>
+
+            <section class="info-section">
+                <h2>Что покрывает гарантия?</h2>
+                <div class="coverage-list">
+                    <div class="coverage-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Производственные дефекты</span>
+                    </div>
+                    <div class="coverage-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Неисправности электродвигателя</span>
+                    </div>
+                    <div class="coverage-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Дефекты корпуса и деталей</span>
+                    </div>
+                    <div class="coverage-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Проблемы с электроникой</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>Что не покрывает гарантия?</h2>
+                <div class="exclusion-list">
+                    <div class="exclusion-item">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Механические повреждения (удары, падения)</span>
+                    </div>
+                    <div class="exclusion-item">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Повреждения от воды и влаги</span>
+                    </div>
+                    <div class="exclusion-item">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Использование не по назначению</span>
+                    </div>
+                    <div class="exclusion-item">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Естественный износ расходных материалов</span>
+                    </div>
+                    <div class="exclusion-item">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Самостоятельный ремонт без авторизации</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>Как оформить гарантийный ремонт?</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-text">Свяжитесь с нами по телефону или через форму на сайте</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-text">Опишите неисправность и подготовьте товар</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-text">Привезите товар в сервисный центр или вызовите курьера</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-text">Мы проведём диагностику и ремонт в течение 14 дней</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>Сервисный центр</h2>
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="contact-info">
+                        <h3>Авторизованный сервисный центр "InstrumentPSK"</h3>
+                        <p><i class="fas fa-map-marker-alt"></i> г. Псков, ул. Звездная, д.3</p>
+                        <p><i class="fas fa-phone"></i> 8 (812) 123-45-67</p>
+                        <p><i class="fas fa-clock"></i> Пн-Пт: 9:00-18:00, Сб: 10:00-16:00</p>
+                        <p><i class="fas fa-envelope"></i> service@instrumentpsk.ru</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>Дополнительная гарантия</h2>
+                <div class="highlight-box">
+                    <i class="fas fa-plus-circle"></i>
+                    <div>
+                        <p><strong>Защита +</strong> — расширенная гарантия на 2 года, включающая бесплатный ремонт и замену деталей.</p>
+                        <p class="small-text">Подробности уточняйте у менеджера при оформлении заказа.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-page {
+        padding: 40px 0;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .info-page h1 {
+        font-size: 32px;
+        margin-bottom: 30px;
+        color: var(--theme-text-primary);
+    }
+    
+    .info-section {
+        margin-bottom: 40px;
+        padding-bottom: 30px;
+        border-bottom: 1px solid var(--theme-border);
+    }
+    
+    .info-section:last-child {
+        border-bottom: none;
+    }
+    
+    .info-section h2 {
+        font-size: 22px;
+        margin-bottom: 20px;
+        color: var(--theme-text-primary);
+    }
+    
+    .info-section > p {
+        color: var(--theme-text-secondary);
+        line-height: 1.7;
+    }
+    
+    .warranty-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .warranty-card {
+        text-align: center;
+        padding: 25px;
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: 12px;
+    }
+    
+    .warranty-value {
+        font-size: 48px;
+        font-weight: 800;
+        color: var(--theme-accent-primary);
+        line-height: 1;
+    }
+    
+    .warranty-label {
+        font-size: 14px;
+        color: var(--theme-text-secondary);
+        margin-bottom: 10px;
+    }
+    
+    .warranty-card p {
+        font-size: 13px;
+        color: var(--theme-text-muted);
+        margin: 0;
+    }
+    
+    .warranty-note {
+        font-size: 14px;
+        color: var(--theme-text-muted);
+        font-style: italic;
+    }
+    
+    .coverage-list, .exclusion-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .coverage-item, .exclusion-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--theme-surface);
+        border-radius: 8px;
+    }
+    
+    .coverage-item i {
+        color: var(--theme-success);
+        font-size: 18px;
+    }
+    
+    .exclusion-item i {
+        color: var(--theme-danger);
+        font-size: 18px;
+    }
+    
+    .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: var(--theme-accent-primary);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    
+    .step-text {
+        font-size: 16px;
+        color: var(--theme-text-primary);
+    }
+    
+    .contact-card {
+        display: flex;
+        gap: 20px;
+        padding: 25px;
+        background: var(--theme-bg-secondary);
+        border-radius: 12px;
+    }
+    
+    .contact-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--theme-accent-primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .contact-icon i {
+        font-size: 28px;
+        color: #fff;
+    }
+    
+    .contact-info h3 {
+        font-size: 18px;
+        margin-bottom: 15px;
+        color: var(--theme-text-primary);
+    }
+    
+    .contact-info p {
+        margin: 8px 0;
+        color: var(--theme-text-secondary);
+    }
+    
+    .contact-info i {
+        width: 20px;
+        color: var(--theme-accent-primary);
+    }
+    
+    .highlight-box {
+        display: flex;
+        gap: 15px;
+        padding: 20px;
+        background: rgba(var(--theme-accent-primary-rgb), 0.1);
+        border-radius: 12px;
+        border-left: 4px solid var(--theme-accent-primary);
+    }
+    
+    .highlight-box i {
+        font-size: 28px;
+        color: var(--theme-accent-primary);
+        flex-shrink: 0;
+    }
+    
+    .highlight-box p {
+        margin: 0 0 10px 0;
+        color: var(--theme-text-primary);
+    }
+    
+    .highlight-box .small-text {
+        font-size: 13px;
+        color: var(--theme-text-muted);
+        margin: 0;
+    }
+    
+    @media (max-width: 768px) {
+        .warranty-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .contact-card {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

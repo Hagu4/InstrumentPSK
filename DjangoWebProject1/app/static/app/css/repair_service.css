@@ -1,0 +1,165 @@
+/* Industrial Style for Repair Service Page */
+
+.repair-hero {
+    position: relative;
+    padding: 80px 0;
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1581092921461-eab6245b0264?auto=format&fit=crop&w=1000&q=80') no-repeat center center;
+    background-size: cover;
+    text-align: center;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.repair-hero .container {
+    position: relative;
+    z-index: 2;
+}
+
+.repair-hero h1, .repair-hero p {
+    color: #fff;
+}
+
+.repair-hero h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.repair-hero p {
+    font-size: 1.25rem;
+    font-weight: 300;
+}
+
+/* --- Advantages Section --- */
+.advantages-section {
+    padding: 40px 0;
+}
+
+.advantages-section .advantage-item {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.advantages-section .icon {
+    font-size: 3rem;
+    color: var(--theme-accent-primary);
+    margin-bottom: 15px;
+    line-height: 1;
+}
+
+.advantages-section h5 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--theme-text-primary);
+}
+
+/* --- Form Section --- */
+.repair-form-section {
+    padding: 80px 0;
+    background: var(--theme-bg-secondary);
+}
+
+.repair-form-container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: var(--theme-surface);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: var(--theme-shadow);
+    border: 1px solid var(--theme-border);
+}
+
+.repair-form-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-weight: 700;
+    color: var(--theme-text-primary);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.repair-form-container .form-control {
+    background-color: var(--theme-input-bg);
+    border: 1px solid var(--theme-border);
+    border-radius: 6px;
+    padding: 12px;
+    height: auto;
+    color: var(--theme-text-primary);
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
+}
+
+.repair-form-container .form-control:focus {
+    border-color: var(--theme-accent-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--theme-accent-primary-rgb), 0.25);
+}
+
+.btn-submit-repair {
+    background-color: var(--theme-accent-primary);
+    border-color: var(--theme-accent-primary);
+    color: #fff;
+    padding: 12px 30px;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 5px;
+    width: 100%;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-submit-repair:hover {
+    background-color: var(--theme-accent-primary-hover);
+    border-color: var(--theme-accent-primary-hover);
+    color: #fff;
+}
+
+/* --- Success/Error Popup --- */
+.popup-message {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1rem;
+    z-index: 1050;
+    box-shadow: var(--theme-shadow-lg);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.popup-message.show {
+    display: block;
+    opacity: 1;
+}
+
+.popup-message.success {
+    background-color: var(--theme-success);
+}
+
+.popup-message.error {
+    background-color: var(--theme-danger);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}

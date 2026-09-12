@@ -1,0 +1,467 @@
+{% extends "app/layout.html" %}
+{% load static %}
+{% load app_filters %}
+
+{% block styles %}
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/hero-new.css' %}?v=4" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/hero_light.css' %}?v=4" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/ticker.css' %}?v=4" />
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/home-categories.css' %}?v=4" />
+    <style>
+        .home-categories .scroll-animate,
+        .home-popular .scroll-animate,
+        .home-banners .scroll-animate,
+        .home-features .scroll-animate,
+        .home-brands .scroll-animate {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+        }
+        .home-categories .scroll-animate.visible,
+        .home-popular .scroll-animate.visible,
+        .home-banners .scroll-animate.visible,
+        .home-features .scroll-animate.visible,
+        .home-brands .scroll-animate.visible {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+        .scroll-delay-1 { transition-delay: 0.05s !important; }
+        .scroll-delay-2 { transition-delay: 0.1s !important; }
+        .scroll-delay-3 { transition-delay: 0.15s !important; }
+        .scroll-delay-4 { transition-delay: 0.2s !important; }
+        .scroll-delay-5 { transition-delay: 0.25s !important; }
+        .scroll-delay-6 { transition-delay: 0.3s !important; }
+        .section-header {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Гарантированные мобильные фиксы для Hero (обход кэша) */
+        @media (max-width: 768px) {
+            .home-categories .scroll-animate,
+            .home-popular .scroll-animate,
+            .home-banners .scroll-animate,
+            .home-features .scroll-animate,
+            .home-brands .scroll-animate {
+                opacity: 1 !important;
+                transform: translateY(0) !important;
+                transition: none !important;
+            }
+            .hero, .hero-section {
+                align-items: flex-start !important;
+                padding-top: 140px !important;
+                padding-bottom: 80px !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
+                margin-top: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                overflow: visible !important; /* Fix cutoff text */
+            }
+            .hero-text h1 {
+                font-size: 28px !important;
+                line-height: 1.3 !important;
+                word-wrap: break-word !important;
+                word-break: break-word !important;
+                hyphens: auto !important;
+                white-space: normal !important;
+                margin-bottom: 20px !important;
+            }
+            .hero-text p {
+                font-size: 16px !important;
+                margin-bottom: 30px !important;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                height: auto !important;
+            }
+            .hero-visual {
+                display: none !important;
+            }
+            .hero-cta {
+                display: flex !important;
+                flex-direction: column;
+                gap: 15px;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+            .hero .btn-primary, .hero .btn-secondary {
+                width: 100% !important;
+                min-width: 100% !important;
+                font-size: 14px !important;
+                padding: 12px 16px !important;
+            }
+        }
+        @media (max-width: 480px) {
+            .hero-text h1 {
+                font-size: 22px !important;
+            }
+        }
+    </style>
+{% endblock %}
+
+
+{% block hero_section %}
+<div class="hero hero-section">
+    <div class="particles-container"></div>
+    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="hero-inner">
+            <div class="hero-text">
+                <h1>Профессиональный <span>инструмент</span> для любых задач</h1>
+                <p>Бензо- и электроинструмент ведущих мировых производителей. Гарантия качества, удобный самовывоз в центре города и экспертная консультация.</p>
+                <div class="hero-cta">
+                    <a href="{% url 'catalog' %}" class="btn-primary">Перейти в каталог</a>
+                    <a href="{% url 'contact' %}" class="btn-secondary">ПОЛУЧИТЬ КОНСУЛЬТАЦИЮ</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-badge">
+                    <div class="hero-badge-inner">
+                        <div class="big-num" data-target="5000+">0</div>
+                        <div class="big-label">ТОВАРОВ В НАЛИЧИИ</div>
+                        <div class="big-sub">СО СКЛАДА В ПСКОВЕ</div>
+                    </div>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="num" data-target="12">0</div>
+                        <div class="label">Лет на рынке</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="num" data-target="50K+">0</div>
+                        <div class="label">Клиентов</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="num">24/7</div>
+                        <div class="label">Поддержка</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Genius Promotions Carousel -->
+        <div class="hero-promotions-carousel" style="max-width: 1400px; margin: 40px auto -80px; width: 95%; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.12); position: relative; z-index: 20; border: 1px solid rgba(255,255,255,0.6); backdrop-filter: blur(10px);">
+            <div id="promoCarousel" class="carousel slide" data-ride="carousel" data-interval="5000">
+                <div class="carousel-inner">
+                    {% if hero_slides %}
+                        {% for slide in hero_slides %}
+                        <div class="item {% if forloop.first %}active{% endif %}">
+                            <div style="background: linear-gradient(135deg, {{ slide.bg_gradient_start|default:'#FF6B00' }} 0%, {{ slide.bg_gradient_end|default:'#FF9500' }} 100%); color: {{ slide.text_color|default:'#FFFFFF' }}; padding: 50px 80px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 30px; {% if slide.image %}background-image: url('{{ slide.image.url }}'); background-size: cover; background-position: right center; background-blend-mode: multiply;{% endif %}">
+                                <div style="flex: 1; min-width: 300px; position: relative; z-index: 2;">
+                                    {% if slide.tag %}
+                                    <span style="display: inline-block; padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">{{ slide.tag }}</span>
+                                    {% endif %}
+                                    <h3 style="margin-top: 0; margin-bottom: 15px; font-weight: 800; font-size: 32px; line-height: 1.2;">{{ slide.title|linebreaksbr }}</h3>
+                                    {% if slide.subtitle %}
+                                    <p style="margin-bottom: 0; font-size: 18px; opacity: 0.9;">{{ slide.subtitle|safe }}</p>
+                                    {% endif %}
+                                </div>
+                                <a href="{{ slide.button_link }}" class="btn" style="position: relative; z-index: 2; background: white; color: {{ slide.bg_gradient_start|default:'#FF6B00' }}; font-weight: 800; font-size: 16px; padding: 16px 32px; border-radius: 12px; text-decoration: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: transform 0.3s ease;">{{ slide.button_text }}</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <a class="left carousel-control" href="#promoCarousel" data-slide="prev" style="background-image: none; width: 80px; display: flex; align-items: center; justify-content: center; opacity: 1; text-shadow: none;">
+                    <div style="background: rgba(255,255,255,0.2); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); transition: background 0.3s ease;">
+                        <i class="fas fa-chevron-left" style="font-size: 20px; color: white; margin-left: -2px;"></i>
+                    </div>
+                </a>
+                <a class="right carousel-control" href="#promoCarousel" data-slide="next" style="background-image: none; width: 80px; display: flex; align-items: center; justify-content: center; opacity: 1; text-shadow: none;">
+                    <div style="background: rgba(255,255,255,0.2); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); transition: background 0.3s ease;">
+                        <i class="fas fa-chevron-right" style="font-size: 20px; color: white; margin-right: -2px;"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span>Профессиональная работа</span>
+    <span>Гарантия до 3 лет</span>
+    <span>Возврат 14 дней</span>
+    <span>Оригинальная продукция</span>
+    <span>Сервисный центр</span>
+    <span>Частые акции</span>
+    <!-- Дубликат для бесшовной анимации -->
+    <span>Профессиональная работа</span>
+    <span>Гарантия до 3 лет</span>
+    <span>Возврат 14 дней</span>
+    <span>Оригинальная продукция</span>
+    <span>Сервисный центр</span>
+    <span>Частые акции</span>
+  </div>
+</div>
+{% endblock hero_section %}
+
+
+{% block content %}
+{% if home_categories %}
+<section class="home-categories">
+    <div class="container">
+        <div class="section-header scroll-animate">
+            <h2 class="section-title">Категории товаров</h2>
+            <a href="{% url 'catalog' %}" class="section-link">Все категории <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="categories-grid">
+            {% for category in home_categories %}
+            <a href="{{ category.get_absolute_url }}" class="category-card scroll-animate scroll-delay-{{ forloop.counter0|add:'1' }}" style="--cat-color: {{ category.color|default:'#F97316' }};">
+                <div class="category-card-icon">
+                    <i class="{{ category.icon|default:'fas fa-tools' }}"></i>
+                    <div class="particle-2"></div>
+                    <div class="particle-3"></div>
+                    <div class="particle-4"></div>
+                    <div class="particle-5"></div>
+                    <div class="particle-6"></div>
+                </div>
+                <h3 class="category-card-title">{{ category.name }}</h3>
+                <p class="category-card-count">{{ category.get_total_products_count }} товаров</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# AI Рекомендации #}
+{% if recommended_products %}
+<section class="home-popular" style="background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); padding: 3rem 0; margin-top: 2rem;">
+    <div class="container">
+        <div class="section-header scroll-animate">
+            <h2 class="section-title">
+                <i class="fas fa-robot" style="color: #FF6B00; margin-right: 0.5rem;"></i>
+                Вам может понравиться
+            </h2>
+            <span style="color: #64748B; font-size: 0.9rem;">Персональные рекомендации</span>
+        </div>
+        <div class="popular-grid">
+            {% for product in recommended_products %}
+            <div class="popular-card scroll-animate scroll-delay-{{ forloop.counter0|add:'1' }}" style="background: white; border: 1px solid #E2E8F0;">
+                <a href="{{ product.get_absolute_url }}" class="popular-card-image">
+                    {% if product.is_hit %}<span class="badge hit">ХИТ</span>{% endif %}
+                    {% if product.images.first %}
+                        <img src="{{ product.images.first.image.url }}" alt="{{ product.title }}" loading="lazy">
+                    {% else %}
+                        <img src="{% static 'app/content/logo.png' %}" alt="No image" style="opacity: 0.5;">
+                    {% endif %}
+                </a>
+                <div class="popular-card-content">
+                    <a href="{{ product.get_absolute_url }}" class="popular-card-title">{{ product.title }}</a>
+                    <div class="popular-card-price">
+                        <span class="price-current">{{ product.price|format_price }} ₽</span>
+                        {% if product.old_price %}
+                        <span class="price-old">{{ product.old_price|format_price }} ₽</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# Баннеры акций #}
+{% if promotions %}
+<section class="home-banners">
+    <div class="container">
+        <div class="banners-grid">
+            {% for promo in promotions %}
+            <a href="{% if promo.link %}{% if promo.link|slice:':1' == '/' %}{{ promo.link }}{% else %}{% url promo.link %}{% endif %}{% else %}{% url 'news' %}{% endif %}" class="banner-card {% if forloop.first %}banner-1{% else %}banner-2{% endif %} scroll-animate scroll-delay-{{ forloop.counter }}" {% if promo.color %}style="--banner-color: {{ promo.color }};"{% endif %}>
+                <div class="banner-content">
+                    {% if promo.discount %}<span class="banner-tag">-{{ promo.discount }}%</span>{% endif %}
+                    <h3 class="banner-title">{{ promo.title }}</h3>
+                    <p class="banner-text">{{ promo.subtitle }}</p>
+                    {% if promo.end_date and not promo.is_permanent %}
+                    <div class="banner-timer">
+                        <div class="timer-item">
+                            <span class="timer-value" id="days-{{ forloop.counter }}">03</span>
+                            <span class="timer-label">дней</span>
+                        </div>
+                        <div class="timer-sep">:</div>
+                        <div class="timer-item">
+                            <span class="timer-value" id="hours-{{ forloop.counter }}">12</span>
+                            <span class="timer-label">часов</span>
+                        </div>
+                        <div class="timer-sep">:</div>
+                        <div class="timer-item">
+                            <span class="timer-value" id="minutes-{{ forloop.counter }}">45</span>
+                            <span class="timer-label">минут</span>
+                        </div>
+                        <div class="timer-sep">:</div>
+                        <div class="timer-item">
+                            <span class="timer-value" id="seconds-{{ forloop.counter }}">30</span>
+                            <span class="timer-label">секунд</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if promo.is_permanent %}<span class="banner-permanent">Постоянная акция</span>{% endif %}
+                </div>
+                <div class="banner-icon">
+                    <i class="{{ promo.icon }}"></i>
+                </div>
+                <div class="banner-bg-shape"></div>
+            </a>
+            {% endfor %}
+        </div>
+        <div class="banners-more scroll-animate">
+            <a href="{% url 'news' %}" class="btn-more-promos">Все акции и новости <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# Преимущества компании #}
+<section class="home-features">
+      <div class="container">
+          <div class="features-grid scroll-animate">
+              <div class="feature-item scroll-animate scroll-delay-1">
+                  <div class="feature-icon">
+                      <i class="fas fa-tools"></i>
+                  </div>
+                  <h4 class="feature-title">Профессиональный инструмент</h4>
+                  <p class="feature-text">Только проверенное оборудование для мастеров</p>
+              </div>
+              <div class="feature-item scroll-animate scroll-delay-2">
+                  <div class="feature-icon">
+                      <i class="fas fa-shield-alt"></i>
+                  </div>
+                  <h4 class="feature-title">Гарантия качества</h4>
+                  <p class="feature-text">Официальная гарантия до 3 лет</p>
+              </div>
+              <div class="feature-item scroll-animate scroll-delay-3">
+                  <div class="feature-icon">
+                      <i class="fas fa-tag"></i>
+                  </div>
+                  <h4 class="feature-title">Лучшая цена</h4>
+                  <p class="feature-text">Выгодные предложения на весь ассортимент</p>
+              </div>
+              <div class="feature-item scroll-animate scroll-delay-4">
+                  <div class="feature-icon">
+                      <i class="fas fa-undo"></i>
+                  </div>
+                  <h4 class="feature-title">Возврат 14 дней</h4>
+                  <p class="feature-text">Вернём деньги, если не подошло</p>
+              </div>
+          </div>
+      </div>
+  </section>
+
+{# Бренды #}
+<section class="home-brands">
+    <div class="container">
+        <div class="section-header section-header-center scroll-animate">
+            <h2 class="section-title">Только оригинальные бренды</h2>
+        </div>
+        <div class="brands-grid">
+            <a href="{% url 'catalog' %}?brand=makita" class="brand-item brand-makita scroll-animate scroll-delay-1">
+                <span class="brand-initial">M</span>
+                <span class="brand-name">MAKITA</span>
+            </a>
+            <a href="{% url 'catalog' %}?brand=dewalt" class="brand-item brand-dewalt scroll-animate scroll-delay-2">
+                <span class="brand-initial">D</span>
+                <span class="brand-name">DEWALT</span>
+            </a>
+            <a href="{% url 'catalog' %}?brand=metabo" class="brand-item brand-metabo scroll-animate scroll-delay-3">
+                <span class="brand-initial">M</span>
+                <span class="brand-name">METABO</span>
+            </a>
+            <a href="{% url 'catalog' %}?brand=bosch" class="brand-item brand-bosch scroll-animate scroll-delay-4">
+                <span class="brand-initial">B</span>
+                <span class="brand-name">BOSCH</span>
+            </a>
+            <a href="{% url 'catalog' %}?brand=stihl" class="brand-item brand-stihl scroll-animate scroll-delay-5">
+                <span class="brand-initial">S</span>
+                <span class="brand-name">STIHL</span>
+            </a>
+            <a href="{% url 'catalog' %}?brand=husqvarna" class="brand-item brand-husqvarna scroll-animate scroll-delay-6">
+                <span class="brand-initial">H</span>
+                <span class="brand-name">HUSQVARNA</span>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'app/js/hero-new.js' %}"></script>
+    <script src="{% static 'app/js/hero_animations.js' %}"></script>
+    <script>
+    (function() {
+        function checkAnimations() {
+            var elements = document.querySelectorAll('.scroll-animate');
+            console.log('Found scroll-animate elements:', elements.length);
+            elements.forEach(function(el) {
+                if (!el.classList.contains('visible')) {
+                    var rect = el.getBoundingClientRect();
+                    console.log('Element rect:', rect.top, window.innerHeight * 0.85);
+                    if (rect.top < window.innerHeight * 0.85) {
+                        el.classList.add('visible');
+                        console.log('Added visible class');
+                    }
+                }
+            });
+        }
+        window.addEventListener('scroll', checkAnimations, { passive: true });
+        window.addEventListener('load', checkAnimations);
+        checkAnimations();
+    })();
+    </script>
+    <script>
+    // Timer countdown for multiple banners
+    function startTimer(duration, displayDays, displayHours, displayMinutes, displaySeconds) {
+        var timer = duration, days, hours, minutes, seconds;
+        setInterval(function () {
+            days = parseInt(timer / 86400, 10);
+            hours = parseInt((timer % 86400) / 3600, 10);
+            minutes = parseInt((timer % 3600) / 60, 10);
+            seconds = parseInt(timer % 60, 10);
+
+            days = days < 10 ? "0" + days : days;
+            hours = hours < 10 ? "0" + hours : hours;
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            if (displayDays) displayDays.textContent = days;
+            if (displayHours) displayHours.textContent = hours;
+            if (displayMinutes) displayMinutes.textContent = minutes;
+            if (displaySeconds) displaySeconds.textContent = seconds;
+
+            if (--timer < 0) {
+                timer = duration;
+            }
+        }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var threeDays = 3 * 24 * 60 * 60;
+        
+        // Check for each banner's timer
+        for (var i = 1; i <= 10; i++) {
+            var displayDays = document.getElementById('days-' + i);
+            var displayHours = document.getElementById('hours-' + i);
+            var displayMinutes = document.getElementById('minutes-' + i);
+            var displaySeconds = document.getElementById('seconds-' + i);
+            
+            if (displayDays && displayHours && displayMinutes && displaySeconds) {
+                startTimer(threeDays, displayDays, displayHours, displayMinutes, displaySeconds);
+            }
+        }
+        
+        // Fallback: original single timer if no numbered timers found
+        var displayDays = document.getElementById('days');
+        var displayHours = document.getElementById('hours');
+        var displayMinutes = document.getElementById('minutes');
+        var displaySeconds = document.getElementById('seconds');
+        
+        if (displayDays && displayHours && displayMinutes && displaySeconds) {
+            startTimer(threeDays, displayDays, displayHours, displayMinutes, displaySeconds);
+        }
+        });
+        </script>
+        {% endblock %}

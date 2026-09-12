@@ -1,0 +1,18 @@
+{% extends "app/layout.html" %}
+
+{% block content %}
+<div class="container text-center" style="padding-top: 40px; padding-bottom: 40px;">
+    <div class="jumbotron">
+        <h1 class="display-4">Спасибо за ваш заказ!</h1>
+        <p class="lead">Ваш заказ был успешно оформлен.</p>
+        <div class="alert alert-info" role="alert">
+            Вы можете отменить свой заказ в течение часа на странице "Мои заказы".
+        </div>
+        
+        <hr class="my-4">
+        <p>Вы можете просмотреть историю ваших заказов в личном кабинете.</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'my_orders' %}" role="button">Мои заказы</a>
+        <a class="btn btn-secondary btn-lg" href="{% url 'home' %}" role="button">На главную</a>
+    </div>
+</div>
+{% endblock %}

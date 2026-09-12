@@ -1,0 +1,124 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block styles %}
+<style>
+    .info-page { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
+    .info-header { text-align: center; margin-bottom: 3rem; }
+    .info-header h1 { font-size: 2.5rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem; }
+    .info-header p { font-size: 1.2rem; color: #64748B; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+    
+    .status-banner {
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 3rem 2rem;
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    .status-icon {
+        font-size: 4rem;
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+    }
+    .status-banner h2 {
+        font-size: 1.8rem;
+        color: #334155;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    .status-banner p {
+        font-size: 1.2rem;
+        color: #64748B;
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .payment-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    .payment-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        padding: 2.5rem;
+        border: 1px solid #f1f5f9;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .payment-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 6px;
+        background: #FF6B00;
+    }
+    
+    .payment-icon {
+        width: 80px;
+        height: 80px;
+        background: #fff7ed;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #FF6B00;
+        font-size: 2.5rem;
+        margin: 0 auto 1.5rem auto;
+    }
+    
+    .payment-card h3 {
+        font-size: 1.5rem;
+        color: #0f172a;
+        margin: 0 0 1rem 0;
+        font-weight: 700;
+    }
+    
+    .payment-card p {
+        font-size: 1.1rem;
+        color: #475569;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    @media (max-width: 768px) {
+        .payment-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="info-page">
+    <div class="info-header">
+        <h1>Оплата</h1>
+        <p>Удобные и безопасные способы оплаты ваших заказов</p>
+    </div>
+
+    <div class="status-banner">
+        <div class="status-icon"><i class="far fa-credit-card"></i></div>
+        <h2>Онлайн-эквайринг в разработке</h2>
+        <p>Мы подключаем ЮKassa для безопасной онлайн-оплаты прямо на сайте. Совсем скоро вы сможете оплачивать заказы, не выходя из дома!</p>
+    </div>
+
+    <h2 style="text-align: center; font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 2rem;">Доступные способы оплаты (в магазине)</h2>
+    
+    <div class="payment-grid">
+        <div class="payment-card">
+            <div class="payment-icon"><i class="fas fa-wallet"></i></div>
+            <h3>Наличными</h3>
+            <p>Оплата наличными рублями на кассе магазина при получении заказа. Выдаем кассовый чек.</p>
+        </div>
+        
+        <div class="payment-card">
+            <div class="payment-icon"><i class="fas fa-credit-card"></i></div>
+            <h3>Банковской картой</h3>
+            <p>Оплата любой банковской картой (Visa, MasterCard, МИР) через терминал при получении заказа.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

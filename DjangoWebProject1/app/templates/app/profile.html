@@ -1,0 +1,36 @@
+{% extends "app/profile_base.html" %}
+{% load static %}
+
+{% block profile_content %}
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/profile_redesign.css' %}" />
+
+<div class="profile-content-wrapper">
+    <h2>Личная информация</h2>
+
+    <div class="profile-form-grid">
+        <div class="form-field">
+            <label for="first_name">Имя</label>
+            <div id="first_name" class="value-display">{{ user.first_name|default:"&mdash;" }}</div>
+        </div>
+
+        <div class="form-field">
+            <label for="last_name">Фамилия</label>
+            <div id="last_name" class="value-display">{{ user.last_name|default:"&mdash;" }}</div>
+        </div>
+
+        <div class="form-field full-width">
+            <label for="email">Email</label>
+            <div id="email" class="value-display">{{ user.email|default:"&mdash;" }}</div>
+        </div>
+
+        <div class="form-field full-width">
+            <label for="phone">Телефон</label>
+            <div id="phone" class="value-display">{{ profile.phone_number|default:"&mdash;" }}</div>
+        </div>
+    </div>
+
+    <div class="profile-actions">
+        <a href="{% url 'profile_edit' %}" class="btn btn-primary btn-edit-profile">Редактировать</a>
+    </div>
+</div>
+{% endblock %}

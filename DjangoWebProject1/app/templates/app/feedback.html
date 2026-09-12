@@ -1,0 +1,119 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'app/css/feedback_style.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<div class="feedback-container">
+    <h2>Форма обратной связи</h2>
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                {{ form.name }}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+            </div>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Общая оценка</label>
+            <div class="star-rating">
+                <span class="star" data-value="1"><i class="fas fa-star"></i></span>
+                <span class="star" data-value="2"><i class="fas fa-star"></i></span>
+                <span class="star" data-value="3"><i class="fas fa-star"></i></span>
+                <span class="star" data-value="4"><i class="fas fa-star"></i></span>
+                <span class="star" data-value="5"><i class="fas fa-star"></i></span>
+            </div>
+            <div style="display:none;">{{ form.overall_rating }}</div>
+        </div>
+
+        <div class="form-group full-width">
+            <label>{{ form.usability_rating.label }}</label>
+            <div class="chip-group">
+                {% for value, text in form.usability_rating.field.choices %}
+                    <input type="radio" name="{{ form.usability_rating.html_name }}" id="id_usability_{{ forloop.counter0 }}" value="{{ value }}" {% if form.usability_rating.value == value|stringformat:"s" %}checked{% endif %}>
+                    <label for="id_usability_{{ forloop.counter0 }}">{{ text }}</label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group full-width">
+            <label>{{ form.visit_frequency.label }}</label>
+            <div class="chip-group">
+                {% for value, text in form.visit_frequency.field.choices %}
+                    <input type="radio" name="{{ form.visit_frequency.html_name }}" id="id_frequency_{{ forloop.counter0 }}" value="{{ value }}" {% if form.visit_frequency.value == value|stringformat:"s" %}checked{% endif %}>
+                    <label for="id_frequency_{{ forloop.counter0 }}">{{ text }}</label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group full-width">
+            <label for="{{ form.comments.id_for_label }}">{{ form.comments.label }}</label>
+            {{ form.comments }}
+        </div>
+
+        <button type="submit" class="submit-btn">Отправить отзыв</button>
+
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const stars = document.querySelectorAll('.star-rating .star');
+    const hiddenInput = document.getElementById('{{ form.overall_rating.id_for_label }}');
+    const activeStarColor = '#FF6B00';
+    const inactiveStarColor = '#ddd';
+
+    let currentRating = 0;
+
+    // Function to set the rating and update stars color
+    function setRating(rating) {
+        currentRating = rating;
+        if (hiddenInput) {
+            hiddenInput.value = rating;
+        }
+        stars.forEach(star => {
+            const starValue = parseInt(star.dataset.value);
+            star.querySelector('i').style.color = starValue <= rating ? activeStarColor : inactiveStarColor;
+        });
+    }
+
+    // Set initial rating if the form has a value (e.g., on validation error)
+    if (hiddenInput && hiddenInput.value) {
+        setRating(parseInt(hiddenInput.value));
+    }
+
+    stars.forEach(star => {
+        // Click event to set the rating
+        star.addEventListener('click', () => {
+            const value = parseInt(star.dataset.value);
+            setRating(value);
+        });
+
+        // Mouseover to show hover effect
+        star.addEventListener('mouseover', () => {
+            const hoverValue = parseInt(star.dataset.value);
+            stars.forEach(s => {
+                const sValue = parseInt(s.dataset.value);
+                s.querySelector('i').style.color = sValue <= hoverValue ? activeStarColor : inactiveStarColor;
+            });
+        });
+    });
+
+    // Mouseout from the star container to reset to the current rating
+    document.querySelector('.star-rating').addEventListener('mouseout', () => {
+        stars.forEach(star => {
+            const starValue = parseInt(star.dataset.value);
+            star.querySelector('i').style.color = starValue <= currentRating ? activeStarColor : inactiveStarColor;
+        });
+    });
+});
+</script>
+
+{% endblock %}

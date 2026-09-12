@@ -1,0 +1,156 @@
+{% extends "app/layout.html" %}
+{% block content %}
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" type="text/css" href="{% static 'app/css/about-page.css' %}" />
+{% endblock %}
+
+<div class="about-container">
+
+    <!-- Section 1: Hero -->
+    <section class="about-hero">
+        <div class="about-hero__content">
+            <h1>InstrumentPSK — ваш надежный партнер в мире инструментов</h1>
+            <p>
+                Компания InstrumentPSK занимается продажей и ремонтом бензо- и электроинструментов уже более 10 лет. 
+                Наша миссия — обеспечить каждого клиента надежными инструментами и первоклассным сервисом для любых задач.
+            </p>
+        </div>
+        <div class="about-hero__image-wrapper">
+            <img src="https://avatars.mds.yandex.net/i?id=98ef0457ed67c5546ba25e2eb1faee52_l-5236416-images-thumbs&n=13" alt="Мастерская InstrumentPSK">
+        </div>
+    </section>
+
+    <!-- Section 2: Stats -->
+    <section class="stats-section">
+        <div class="stat-item" data-count="10">
+            <div class="stat-item__number"><span class="counter">0</span>+</div>
+            <div class="stat-item__label">Лет работы</div>
+        </div>
+        <div class="stat-item" data-count="1000">
+            <div class="stat-item__number"><span class="counter">0</span>+</div>
+            <div class="stat-item__label">Довольных клиентов</div>
+        </div>
+        <div class="stat-item" data-count="12" data-suffix="">
+            <div class="stat-item__number"><span class="counter">0</span></div>
+            <div class="stat-item__label">Месяцев гарантии</div>
+        </div>
+    </section>
+
+    <!-- Section 3: Why Us -->
+    <section class="why-us-section">
+        <h2>Почему выбирают нас?</h2>
+        <div class="why-us-grid">
+            <div class="why-us-card">
+                <div class="why-us-card__icon"><i class="fas fa-th-large"></i></div>
+                <h3 class="why-us-card__title">Широкий ассортимент</h3>
+                <p class="why-us-card__text">От ведущих мировых производителей для любых нужд.</p>
+            </div>
+            <div class="why-us-card">
+                <div class="why-us-card__icon"><i class="fas fa-wrench"></i></div>
+                <h3 class="why-us-card__title">Профессиональный ремонт</h3>
+                <p class="why-us-card__text">Квалифицированные мастера и современное оборудование.</p>
+            </div>
+            <div class="why-us-card">
+                <div class="why-us-card__icon"><i class="fas fa-shield-alt"></i></div>
+                <h3 class="why-us-card__title">Гарантия качества</h3>
+                <p class="why-us-card__text">Мы уверены в своей работе и предоставляем гарантию на все услуги.</p>
+            </div>
+            <div class="why-us-card">
+                <div class="why-us-card__icon"><i class="fas fa-cogs"></i></div>
+                <h3 class="why-us-card__title">Оригинальные запчасти</h3>
+                <p class="why-us-card__text">Используем только оригинальные комплектующие для долгой службы.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Services and Brands -->
+    <section class="services-brands-section">
+        <div class="services-column">
+            <h3>Наши услуги</h3>
+            <ul class="services-list">
+                <li>Продажа инструментов</li>
+                <li>Ремонт и диагностика</li>
+                <li>Замена деталей</li>
+                <li>Техническое обслуживание (ТО)</li>
+                <li>Профессиональные консультации</li>
+            </ul>
+            <div style="margin-top: 25px; padding: 16px; background: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 8px;">
+                <strong style="color: #1e40af; font-size: 1.5rem; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <i class="fas fa-info-circle"></i> О ремонте
+                </strong>
+                <span style="font-size: 0.9rem; color: #475569; line-height: 1.5; display: block;">
+                    Прием инструмента на диагностику и ремонт осуществляется <strong>только при личном визите</strong> в наш сервисный центр по адресу: г. Псков, ул. Звездная, д.3.
+                </span>
+            </div>
+        </div>
+        <div class="brands-column">
+            <h3>Работаем с брендами</h3>
+            <div class="brands-list">
+                <span>Bosch</span>
+                <span>Makita</span>
+                <span>DeWALT</span>
+                <span>Metabo</span>
+                <span>Milwaukee</span>
+                <span>STIHL</span>
+                <span>Husqvarna</span>
+                <span>Hitachi</span>
+                <span>Интерскол</span>
+                <span>Зубр</span>
+                <span>Энкор</span>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statItems = document.querySelectorAll('.stat-item[data-count]');
+    
+    const observerOptions = {
+        threshold: 0.5,
+        rootMargin: '0px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const statItem = entry.target;
+                const target = parseInt(statItem.dataset.count);
+                const counter = statItem.querySelector('.counter');
+                
+                if (counter && !statItem.classList.contains('counted')) {
+                    statItem.classList.add('counted');
+                    animateCounter(counter, target);
+                }
+            }
+        });
+    }, observerOptions);
+    
+    statItems.forEach(function(item) {
+        observer.observe(item);
+    });
+    
+    function animateCounter(element, target) {
+        const duration = 2000;
+        const steps = 60;
+        const stepDuration = duration / steps;
+        let current = 0;
+        const increment = target / steps;
+        
+        const timer = setInterval(function() {
+            current += increment;
+            if (current >= target) {
+                element.textContent = target;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(current);
+            }
+        }, stepDuration);
+    }
+});
+</script>
+
+{% endblock %}

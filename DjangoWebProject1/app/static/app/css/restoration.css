@@ -1,0 +1,49 @@
+/* ============================================= */
+/* SAFE RESTORATION STYLES                  */
+/* Purpose: To override broken styles and    */
+/* restore layout component by component.    */
+/* ============================================= */
+
+/* --- 1. Header Restoration --- */
+
+body {
+    background-color: #f8f9fa !important;
+}
+
+.site-header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e9ecef !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    padding: 10px 0 !important;
+    display: block;
+}
+
+.site-header .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.main-nav-links a {
+    color: #343a40 !important;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.main-nav-links a:hover {
+    color: #007bff !important;
+}
+
+.header-search-bar input {
+    background-color: #f1f3f5 !important;
+    border: 1px solid #dee2e6 !important;
+    color: #495057 !important;
+}
+
+.user-actions .action-icon {
+    color: #343a40 !important;
+}
+
+.user-actions .profile-dropdown-btn {
+    color: #343a40 !important;
+}

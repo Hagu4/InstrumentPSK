@@ -1,0 +1,617 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    .auth-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #f97316 0%, #764ba2 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .auth-page::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+        animation: pulse 15s ease infinite;
+        pointer-events: none;
+    }
+
+    .auth-page::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        right: -30%;
+        width: 150%;
+        height: 150%;
+        background: radial-gradient(circle, rgba(118, 75, 162, 0.3) 0%, transparent 50%);
+        animation: pulse 20s ease-in-out infinite reverse;
+        pointer-events: none;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.15); opacity: 0.8; }
+    }
+
+    .auth-container {
+        display: flex;
+        max-width: 1400px;
+        width: 95%;
+        background: white;
+        border-radius: 32px;
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+    }
+
+    .auth-form-section {
+        flex: 1.3;
+        padding: 70px 60px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .auth-benefits-section {
+        flex: 0.7;
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        padding: 70px 50px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+    }
+
+    .auth-benefits-section::before {
+        content: '';
+        position: absolute;
+        top: -100px;
+        right: -100px;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+
+    .auth-logo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 35px;
+    }
+
+        .auth-logo img {
+        height: 48px;
+        width: auto;
+        object-fit: contain;
+    }
+
+        .auth-logo span {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -1px;
+        text-transform: uppercase;
+    }
+
+    .auth-form-section h2 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 10px;
+    }
+
+    .auth-form-section .subtitle {
+        color: #6b7280;
+        margin-bottom: 40px;
+        font-size: 1.15rem;
+    }
+
+    .form-group {
+        margin-bottom: 28px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 12px;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .password-field-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .password-field-wrapper .input-icon {
+        position: absolute;
+        left: 18px;
+        color: #9ca3af;
+        font-size: 1.2rem;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    .password-field-wrapper input {
+        width: 100%;
+        height: 64px;
+        padding: 0 55px 0 52px;
+        background: #f9fafb;
+        border: 2px solid transparent;
+        border-radius: 16px;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+    }
+
+    .password-field-wrapper input:focus {
+        outline: none;
+        background: white;
+        border-color: #f97316;
+        box-shadow: 0 0 0 6px rgba(249, 115, 22, 0.1);
+    }
+
+    .password-field-wrapper input::placeholder {
+        color: #9ca3af;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 18px;
+        background: none;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 0;
+        transition: color 0.3s;
+        font-size: 1.2rem;
+        z-index: 2;
+    }
+
+    .password-toggle:hover {
+        color: #6b7280;
+    }
+
+    .input-wrapper i {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 1.2rem;
+        transition: color 0.3s;
+        pointer-events: none;
+    }
+
+    .input-wrapper input:focus ~ i {
+        color: #f97316;
+    }
+
+    .input-wrapper input {
+        padding-left: 52px;
+    }
+
+    .form-control {
+        width: 100%;
+        height: 64px;
+        padding: 0 20px;
+        background: #f9fafb;
+        border: 2px solid transparent;
+        border-radius: 16px;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        background: white;
+        border-color: #f97316;
+        box-shadow: 0 0 0 6px rgba(249, 115, 22, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: #9ca3af;
+    }
+
+    .form-options-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        margin-top: -5px;
+    }
+
+    .custom-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        user-select: none;
+        font-size: 1.05rem;
+        color: #6b7280;
+    }
+
+    .custom-checkbox-label input[type="checkbox"] {
+        display: none;
+    }
+
+    .checkbox-visual {
+        width: 24px;
+        height: 24px;
+        border: 2px solid #d1d5db;
+        border-radius: 6px;
+        display: inline-block;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    .checkbox-visual::after {
+        content: '';
+        position: absolute;
+        left: 7px;
+        top: 3px;
+        width: 8px;
+        height: 14px;
+        border: solid white;
+        border-width: 0 2.5px 2.5px 0;
+        transform: rotate(45deg);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .custom-checkbox-label:hover .checkbox-visual {
+        border-color: #f97316;
+    }
+
+    .custom-checkbox-label input:checked + .checkbox-visual {
+        background-color: #f97316;
+        border-color: #f97316;
+    }
+
+    .custom-checkbox-label input:checked + .checkbox-visual::after {
+        opacity: 1;
+    }
+
+    .forgot-password-link {
+        font-size: 1.05rem;
+        color: #f97316;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+
+    .forgot-password-link:hover {
+        color: #ea580c;
+        text-decoration: underline;
+    }
+
+    .btn-login {
+        width: 100%;
+        height: 68px;
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-size: 1.3rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 12px 30px rgba(249, 115, 22, 0.4);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 40px rgba(249, 115, 22, 0.5);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .form-errors {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 28px;
+    }
+
+    .form-errors p {
+        color: #dc2626;
+        font-size: 1.05rem;
+        margin: 0;
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin: 30px 0;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        content: '';
+        flex: 1;
+        height: 2px;
+        background: #e5e7eb;
+    }
+
+    .auth-divider span {
+        color: #9ca3af;
+        font-size: 1rem;
+    }
+
+    .social-login {
+        display: flex;
+        gap: 16px;
+    }
+
+    .social-btn {
+        flex: 1;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        font-size: 1.3rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #6b7280;
+        text-decoration: none;
+    }
+
+    .social-btn:hover {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+    }
+
+    .social-btn.vk { color: #4c75a3; }
+    .social-btn.mailru { color: #005FF9; }
+
+    .register-prompt {
+        text-align: center;
+        margin-top: 32px;
+        font-size: 1.1rem;
+        color: #6b7280;
+        position: relative;
+        z-index: 10;
+    }
+
+    .register-prompt a {
+        color: #f97316;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 10px 15px;
+        display: inline-block;
+        margin: -10px -15px;
+    }
+
+    .register-prompt a:hover {
+        text-decoration: underline;
+    }
+
+    .benefits-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 35px;
+    }
+
+    .benefit-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 28px;
+    }
+
+    .benefit-icon {
+        width: 54px;
+        height: 54px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .benefit-icon i {
+        font-size: 1.4rem;
+    }
+
+    .benefit-content h4 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0 0 6px 0;
+    }
+
+    .benefit-content p {
+        font-size: 1.05rem;
+        opacity: 0.9;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+        .auth-container {
+            flex-direction: column;
+            max-width: 600px;
+        }
+
+        .auth-benefits-section {
+            padding: 50px 35px;
+        }
+
+        .auth-form-section {
+            padding: 45px 35px 65px 35px;
+        }
+    }
+</style>
+
+<div class="auth-page">
+    <div class="auth-container">
+        <div class="auth-form-section">
+            <div class="auth-logo">
+                <img src="{% static 'app/content/logo.png' %}" alt="Logo">
+                <span>InstrumentPSK</span>
+            </div>
+
+            <h2>Вход в аккаунт</h2>
+            <p class="subtitle">Войдите, чтобы получить доступ к заказам и избранному</p>
+
+            <form action="." method="post">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                <div class="form-errors">
+                    <p>Имя пользователя или пароль введены неверно. Попробуйте снова.</p>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">Имя пользователя или Email</label>
+                    <div class="input-wrapper">
+                        {{ form.username }}
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}">Пароль</label>
+                    <div class="password-field-wrapper">
+                        <div class="input-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        {{ form.password }}
+                        <button type="button" class="password-toggle" onclick="togglePassword(this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-options-row">
+                    <label class="custom-checkbox-label">
+                        <input type="checkbox" name="remember_me">
+                        <span class="checkbox-visual"></span>
+                        <span>Запомнить меня</span>
+                    </label>
+                    <a href="{% url 'password_reset' %}" class="forgot-password-link">Забыли пароль?</a>
+                </div>
+
+                <input type="hidden" name="next" value="{{ request.GET.next|default:'/' }}" />
+
+                <button type="submit" class="btn btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Войти
+                </button>
+
+                <div class="auth-divider">
+                    <span>или</span>
+                </div>
+
+                <div class="social-login">
+                    <a href="#" class="social-btn vk">
+                        <i class="fab fa-vk"></i>
+                        ВКонтакте
+                    </a>
+                    <a href="#" class="social-btn mailru">
+                        <i class="fas fa-at"></i>
+                        Mail.ru
+                    </a>
+                </div>
+
+                <div class="register-prompt">
+                    Нет аккаунта? <a href="{% url 'registration' %}">Зарегистрируйтесь</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="auth-benefits-section">
+            <h3 class="benefits-title">Добро пожаловать!</h3>
+
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>Быстрый заказ</h4>
+                    <p>Оформляйте заказы в один клик</p>
+                </div>
+            </div>
+
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>Избранное</h4>
+                    <p>Сохраняйте понравившиеся товары</p>
+                </div>
+            </div>
+
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>История заказов</h4>
+                    <p>Отслеживайте свои покупки</p>
+                </div>
+            </div>
+
+            <div class="benefit-item">
+                <div class="benefit-icon">
+                    <i class="fas fa-percent"></i>
+                </div>
+                <div class="benefit-content">
+                    <h4>Скидки и акции</h4>
+                    <p>Узнавайте о спецпредложениях первыми</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword(btn) {
+    const input = btn.parentElement.querySelector('input');
+    const icon = btn.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+</script>
+{% endblock %}

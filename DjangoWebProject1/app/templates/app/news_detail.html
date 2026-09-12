@@ -1,0 +1,252 @@
+{% extends "app/layout.html" %}
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'app/css/news_style.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="promo-page">
+    <article class="news-detail">
+        {% if article.image %}
+        <div class="news-detail-hero">
+            <img src="{{ article.image.url }}" alt="{{ article.title }}">
+            <div class="news-detail-hero-overlay"></div>
+        </div>
+        {% endif %}
+        
+        <div class="news-detail-content">
+            <a href="{% url 'news' %}" class="news-detail-back">
+                <i class="fas fa-arrow-left"></i> Все новости
+            </a>
+            
+            <div class="news-detail-meta">
+                <span class="news-detail-date">
+                    <i class="fas fa-calendar"></i> {{ article.created_at|date:"d E Y" }}
+                </span>
+                {% if article.author %}
+                <span class="news-detail-author">
+                    <i class="fas fa-user"></i> {{ article.author.get_full_name|default:article.author.username }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <h1 class="news-detail-title">{{ article.title }}</h1>
+            
+            {% if article.short_description %}
+            <p class="news-detail-lead">{{ article.short_description }}</p>
+            {% endif %}
+            
+            <div class="news-detail-body">
+                {{ article.content|linebreaks }}
+            </div>
+            
+            <div class="news-detail-share">
+                <span>Поделиться:</span>
+                <a href="https://vk.com/share.php?url={{ request.build_absolute_uri }}" target="_blank" class="share-btn">
+                    <i class="fab fa-vk"></i>
+                </a>
+                <a href="https://t.me/share/url?url={{ request.build_absolute_uri }}&text={{ article.title }}" target="_blank" class="share-btn">
+                    <i class="fab fa-telegram-plane"></i>
+                </a>
+            </div>
+        </div>
+    </article>
+    
+    {% if related_news %}
+    <section class="related-news">
+        <div class="news-section">
+            <div class="section-header-modern">
+                <div class="section-header-left">
+                    <span class="section-icon news-icon"><i class="fas fa-newspaper"></i></span>
+                    <h2 class="section-title-modern">Другие новости</h2>
+                </div>
+            </div>
+            
+            <div class="news-grid-bento">
+                {% for item in related_news %}
+                <div class="news-card-bento">
+                    <div class="news-card-image-wrapper">
+                        {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.title }}">
+                        {% else %}
+                        <img src="{% static 'app/images/news-placeholder.jpg' %}" alt="{{ item.title }}" onerror="this.parentElement.classList.add('no-image')">
+                        {% endif %}
+                        <div class="news-card-overlay"></div>
+                    </div>
+                    <div class="news-card-content">
+                        <span class="news-card-date">
+                            <i class="fas fa-calendar"></i> {{ item.created_at|date:"d E Y" }}
+                        </span>
+                        <h4 class="news-card-title">{{ item.title }}</h4>
+                        <p class="news-card-excerpt">{{ item.short_description|default:item.content|truncatewords:15 }}</p>
+                        <a href="{{ item.get_absolute_url }}" class="news-card-link">
+                            Читать далее <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="news-card-shine"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+    
+    <section class="cta-section">
+        <div class="cta-glow"></div>
+        <div class="cta-content">
+            <h2 class="cta-title">Остались вопросы?</h2>
+            <p class="cta-text">Наши специалисты всегда готовы помочь вам с выбором инструмента</p>
+            <div class="cta-buttons">
+                <a href="{% url 'contact' %}" class="cta-btn cta-btn-primary">
+                    <i class="fas fa-phone"></i> Связаться с нами
+                </a>
+                <a href="{% url 'catalog' %}" class="cta-btn cta-btn-secondary">
+                    <i class="fas fa-shopping-cart"></i> В каталог
+                </a>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+.news-detail {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+}
+
+.news-detail-hero {
+    position: relative;
+    margin: 0 -20px 40px;
+    height: 400px;
+    overflow: hidden;
+}
+
+.news-detail-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.news-detail-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(248, 250, 252, 0.9) 100%);
+}
+
+.news-detail-content {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    margin-top: -60px;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.news-detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 20px;
+    transition: color 0.2s;
+}
+
+.news-detail-back:hover {
+    color: #F97316;
+}
+
+.news-detail-meta {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+.news-detail-meta i {
+    margin-right: 4px;
+}
+
+.news-detail-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 20px 0;
+    line-height: 1.3;
+}
+
+.news-detail-lead {
+    font-size: 18px;
+    color: #64748b;
+    margin: 0 0 30px 0;
+    line-height: 1.6;
+}
+
+.news-detail-body {
+    font-size: 16px;
+    color: #475569;
+    line-height: 1.8;
+}
+
+.news-detail-body p {
+    margin: 0 0 20px 0;
+}
+
+.news-detail-share {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.share-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: 8px;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.share-btn:hover {
+    background: #F97316;
+    color: #fff;
+}
+
+.related-news {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .news-detail-hero {
+        height: 250px;
+    }
+    
+    .news-detail-content {
+        padding: 24px;
+        margin-top: -40px;
+    }
+    
+    .news-detail-title {
+        font-size: 24px;
+    }
+    
+    .news-detail-lead {
+        font-size: 16px;
+    }
+}
+</style>
+{% endblock %}

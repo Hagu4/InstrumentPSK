@@ -1,0 +1,62 @@
+{% load static %}
+{% load app_filters %}
+{% load humanize %}
+<div class="product-card-wrapper">
+    <div class="product-card-image-block">
+        {% if product.is_hit %}
+            <div class="product-card-badge hit">ХИТ</div>
+        {% endif %}
+        {% if product.is_new %}
+            <div class="product-card-badge new">НОВИНКА</div>
+        {% endif %}
+        {% if product.discount_percentage > 0 %}
+            <div class="product-card-badge discount"> -{{ product.discount_percentage }}%</div>
+        {% endif %}
+        {# Assuming power type is a characteristic that can be easily identified #}
+        {% for characteristic in product.characteristics.all %}
+            {% if characteristic.characteristic.name == "Тип питания" %}
+                <div class="product-card-badge power-type">{{ characteristic.value|upper }}</div>
+            {% endif %}
+        {% endfor %}
+        
+        <a href="{{ product.get_absolute_url }}">
+            {% if product.images.first %}
+                <img src="{{ product.images.first.image.url }}" alt="{{ product.title }}" class="product-image">
+            {% else %}
+                <img src="{% static 'app/content/logo.png' %}" alt="No image available" class="product-image" style="opacity: 0.5;">
+            {% endif %}
+        </a>
+        <button class="favorite-btn {% if product.id in favorite_product_ids %}is-favorite{% endif %}" data-product-id="{{ product.id }}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-heart"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        </button>
+        <button class="quick-view-btn" data-product-id="{{ product.id }}">БЫСТРЫЙ ПРОСМОТР</button>
+    </div>
+    <div class="product-card-info-block">
+        <a href="{{ product.brand.get_absolute_url }}" class="product-card-brand-link">
+            <div class="product-card-brand">{{ product.brand.name|upper }}</div>
+        </a>
+        <div class="product-card-rating">
+            {% with avg_rating=product.average_rating|default:0 %}
+                {% for i in 5|get_range %}
+                    <svg class="star-icon {% if i < avg_rating %}filled{% else %}empty{% endif %}" viewBox="0 0 24 24"><path d="M12 .587l3.668 7.431 8.216 1.191-5.945 5.795 1.403 8.175L12 18.896l-7.342 3.868 1.403-8.175L.116 9.209l8.216-1.191L12 .587z"/></svg>
+                {% endfor %}
+                <span class="reviews">({{ product.reviews_count }})</span>
+            {% endwith %}
+        </div>
+        <a href="{{ product.get_absolute_url }}" class="product-card-title-link">
+            <div class="product-card-title">{{ product.title }}</div>
+        </a>
+        <div class="product-card-characteristics">{{ product.get_specs_line }}</div>
+        <div class="product-card-price-block">
+            <div class="product-card-price">
+                {% if product.old_price and product.old_price > product.price %}
+                    <span class="old-price-text">{{ product.old_price|format_price }} ₽</span>
+                {% endif %}
+                <span class="current-price-text">{{ product.price|format_price }} ₽</span>
+            </div>
+            <button class="add-to-cart-btn" data-product-id="{{ product.id }}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,473 @@
+/* Industrial Theme - Updated for Dark Mode Support */
+
+:root {
+    --primary-bg: var(--theme-bg);
+    --secondary-bg: var(--theme-bg-secondary);
+    --primary-text: var(--theme-text-primary);
+    --secondary-text: var(--theme-text-secondary);
+    --accent-main: var(--theme-accent-primary);
+    --accent-hover: var(--theme-accent-primary-hover);
+    --success: var(--theme-success);
+    --error: var(--theme-danger);
+    --gradient-button: linear-gradient(to right, var(--theme-accent-primary), var(--theme-accent-primary-hover));
+
+    --primary-color: var(--accent-main);
+    --secondary-color: var(--accent-main);
+    --success-color: var(--success);
+    --danger-color: var(--error);
+    --light-gray-color: var(--theme-bg-secondary);
+    --gray-color: var(--theme-border);
+    --dark-gray-color: var(--theme-text-secondary);
+    --text-color: var(--theme-text-primary);
+    --hover-background: var(--theme-hover-bg);
+    --border-radius: 8px;
+}
+
+/* --- General Body & Typography --- */
+body {
+    background-color: var(--primary-bg);
+    color: var(--primary-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--primary-text);
+}
+
+a {
+    color: var(--accent-main);
+}
+a:hover {
+    color: var(--accent-hover);
+}
+
+/* --- Buttons --- */
+.btn {
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+    background-color: var(--accent-main);
+    border-color: var(--accent-main);
+    color: #FFFFFF;
+}
+
+.btn-primary:hover {
+    background: var(--gradient-button);
+    border-color: var(--accent-hover);
+    color: #fff;
+    box-shadow: var(--theme-shadow-lg);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 1px solid var(--accent-main);
+    color: var(--accent-main);
+}
+
+.btn-secondary:hover {
+    background-color: var(--accent-main);
+    border-color: var(--accent-main);
+    color: #fff;
+}
+
+/* --- Header --- */
+.site-header {
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
+}
+
+.main-nav-links a {
+    color: var(--header-text);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.main-nav-links a:hover,
+.main-nav-links a.active {
+    color: var(--header-hover);
+}
+.main-nav-links a::after {
+    background-color: var(--header-hover);
+}
+
+.dropdown-toggle {
+    color: var(--header-text);
+}
+.dropdown-toggle:hover {
+    color: var(--header-hover);
+}
+
+.header-search-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.header-search-bar form {
+    display: flex;
+    position: relative;
+    width: 100%;
+}
+
+.header-search-input {
+    background-color: var(--theme-input-bg);
+    border: 1px solid var(--theme-input-border);
+    color: var(--theme-text-primary);
+    padding-right: 40px;
+    flex-grow: 1;
+}
+.header-search-input:focus {
+    background-color: var(--theme-surface);
+    border-color: var(--accent-main);
+    box-shadow: 0 0 0 0.2rem rgba(var(--theme-accent-primary-rgb), 0.25);
+}
+
+.search-button {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0 10px;
+    cursor: pointer;
+    color: var(--secondary-text);
+}
+.search-button:hover {
+    color: var(--accent-main);
+}
+
+.action-icon {
+    color: var(--header-text);
+}
+.action-icon:hover {
+    color: var(--header-hover);
+}
+
+/* --- Hero Banner (Overlay) --- */
+.hero-block {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--theme-bg-secondary);
+}
+.hero-block::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--theme-bg-secondary);
+    opacity: 0.7;
+    z-index: 1;
+}
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+.hero-content h1, .hero-content p {
+    color: var(--theme-text-primary);
+}
+
+/* --- Brand Block --- */
+.brand-block {
+    background-color: var(--accent-main);
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
+.brand-block .btn:hover {
+    background: var(--gradient-button);
+}
+
+/* --- Product Cards --- */
+.card.product-card-hover {
+    background-color: var(--theme-surface);
+    border: 1px solid var(--theme-border);
+    box-shadow: var(--theme-shadow);
+}
+
+.card.product-card-hover:hover {
+    box-shadow: var(--theme-shadow-lg);
+    border-color: var(--accent-main);
+}
+
+.card-price {
+    color: var(--accent-main);
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.card-title {
+     color: var(--theme-text-primary);
+}
+
+.btn-add-to-cart {
+    background-color: var(--accent-main);
+    color: #fff;
+    border: none;
+}
+.btn-add-to-cart:hover {
+    background: var(--gradient-button);
+    color: #fff;
+}
+
+/* --- Badges --- */
+.badge.bg-success, .stock-status.in-stock {
+    color: #fff;
+}
+.badge.bg-danger, .stock-status.out-of-stock {
+    background-color: var(--error) !important;
+    color: #fff;
+}
+
+/* --- Filters & Categories --- */
+.filter-chip {
+    background-color: var(--accent-main);
+    color: #fff;
+}
+
+.filter-chip-remove {
+    color: #fff;
+    opacity: 0.8;
+}
+.filter-chip-remove:hover {
+    opacity: 1;
+}
+
+/* --- Forms & Inputs --- */
+.form-control {
+    background-color: var(--theme-input-bg);
+    border: 1px solid var(--theme-input-border);
+    color: var(--theme-text-primary);
+}
+.form-control:focus {
+    background-color: var(--theme-surface);
+    border-color: var(--accent-main);
+    box-shadow: 0 0 0 3px rgba(var(--theme-accent-primary-rgb), 0.2);
+    color: var(--theme-text-primary);
+}
+
+/* --- Pagination --- */
+.pagination .page-item.active .page-link {
+    background-color: var(--accent-main);
+    border-color: var(--accent-main);
+    color: #fff;
+}
+.pagination .page-link {
+    background-color: var(--theme-surface);
+    border-color: var(--theme-border);
+    color: var(--theme-text-primary);
+}
+.pagination .page-link:hover {
+    color: var(--accent-main);
+    background-color: var(--theme-hover-bg);
+    border-color: var(--theme-border);
+}
+
+/* --- Progress Bars --- */
+.progress-bar {
+    background-color: var(--accent-main);
+}
+
+/* --- Icons --- */
+.icon {
+    color: var(--theme-text-primary);
+}
+.icon-accent {
+    color: var(--accent-main);
+}
+
+/* --- Borders & Dividers --- */
+hr, .dropdown-divider {
+    background-color: var(--theme-border);
+}
+
+/* --- Profile Page Specifics --- */
+.profile-sidebar {
+    background: var(--accent-main);
+    box-shadow: var(--theme-shadow-lg);
+}
+.profile-sidebar .avatar-img {
+    color: var(--accent-main);
+}
+.btn-edit-photo {
+    background-color: var(--theme-surface);
+    color: var(--accent-main);
+    border-color: var(--theme-border);
+}
+.btn-edit-photo:hover {
+    background-color: var(--theme-hover-bg);
+}
+
+.profile-tabs .nav-link.active {
+    color: var(--accent-main);
+    border-bottom-color: var(--accent-main);
+}
+.profile-tabs .nav-link:hover {
+    color: var(--accent-main);
+}
+
+.info-item {
+    background-color: var(--theme-surface);
+    border-left: 5px solid var(--theme-border);
+}
+.info-item:hover {
+    border-left-color: var(--accent-main);
+}
+.section-title {
+    color: var(--accent-main);
+}
+
+.btn-submit-profile {
+    background: var(--gradient-button);
+}
+
+.profile-content-body form input[type="text"]:focus,
+.profile-content-body form input[type="email"]:focus,
+.profile-content-body form input[type="password"]:focus {
+    border-color: var(--accent-main);
+    box-shadow: 0 0 0 3px rgba(var(--theme-accent-primary-rgb), 0.2);
+}
+
+/* --- Dropdown Menu Fixes --- */
+.dropdown-menu {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+    text-align: left;
+    background-color: var(--theme-surface);
+    border: 1px solid var(--theme-border);
+    box-shadow: var(--theme-shadow-lg);
+}
+
+.dropdown-item {
+    color: var(--theme-text-primary);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.dropdown-item:hover {
+    background-color: var(--theme-hover-bg);
+    color: var(--theme-text-primary);
+}
+
+.dropdown-item .dropdown-icon {
+    color: var(--theme-text-secondary);
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+    margin-right: 0;
+}
+
+/* --- Sidebar & Filter Fixes --- */
+.panel-title-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-left: 3px solid transparent;
+}
+.panel-title-custom:hover {
+    background-color: var(--theme-hover-bg);
+    border-left-color: var(--accent-main);
+}
+.panel-title-custom a:not(.pull-right) {
+    color: var(--theme-text-primary);
+    text-decoration: none;
+    flex-grow: 1;
+}
+.panel-title-custom a:not(.pull-right):hover {
+    color: var(--accent-main);
+}
+.panel-title-custom a.active {
+    font-weight: 600;
+    color: #fff;
+}
+
+.panel-title-custom .pull-right {
+    padding: 5px;
+    color: var(--theme-text-secondary);
+}
+
+/* --- Fly-out Submenu Styles --- */
+.panel-group {
+    position: relative;
+}
+
+.panel-collapse {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 5px;
+    width: 250px;
+    z-index: 1100;
+    
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px);
+    transition: opacity 0.2s ease, visibility 0s 0.2s, transform 0.2s ease;
+
+    height: auto !important;
+    display: block !important;
+}
+
+.panel-collapse.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition-delay: 0s;
+}
+
+.panel-collapse .panel-body {
+    padding: 0;
+    background-color: var(--theme-surface);
+    border: 1px solid var(--theme-border);
+    box-shadow: var(--theme-shadow-lg);
+    border-radius: var(--border-radius);
+}
+
+.panel-collapse .list-group {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.panel-collapse .list-group-item {
+    background-color: var(--theme-surface);
+    border-color: var(--theme-border);
+    color: var(--theme-text-primary);
+}
+
+.panel-collapse .list-group-item:hover {
+    background-color: var(--theme-hover-bg);
+}
+
+.panel-title-custom .pull-right .caret {
+    transform: rotate(-90deg);
+}
+
+/* --- Custom Carousel Caption Styles --- */
+#myCarousel {
+    margin-top: 20px;
+}
+
+#myCarousel .carousel-caption h2 {
+    color: #fff;
+    font-size: 36px;
+    font-weight: 700;
+}
+
+#myCarousel .carousel-caption .btn-primary {
+    color: #fff;
+}
+
+#myCarousel .carousel-caption {
+    background: var(--overlay-bg);
+    border-radius: var(--border-radius);
+}
