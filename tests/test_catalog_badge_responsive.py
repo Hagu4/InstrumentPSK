@@ -14,6 +14,8 @@ def find_browser():
     candidates = (
         shutil.which("msedge"),
         shutil.which("chrome"),
+        shutil.which("google-chrome"),
+        shutil.which("chromium"),
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
     )
