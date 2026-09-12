@@ -23,7 +23,7 @@ jobs:
       ALLOWED_HOSTS: localhost,127.0.0.1,testserver
       EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
