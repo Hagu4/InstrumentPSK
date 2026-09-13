@@ -1340,6 +1340,7 @@
             <div class="review-form-container" id="review-form">
                 {% if user.is_authenticated %}
                     <h4>Оставить отзыв</h4>
+                    {% if form.errors %}<div class="alert alert-danger" role="alert">{{ form.errors }}</div>{% endif %}
                     <form method="post" action="{% url 'product_detail' product_id=product.id %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="form-group">
