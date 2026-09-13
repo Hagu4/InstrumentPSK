@@ -2,6 +2,9 @@ from django import forms
 from django.db import transaction
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from .uploads import prepare_images
 from .models import Product, Review, Feedback, Profile, Order, ProductCharacteristic
 
 from decimal import Decimal
@@ -49,7 +52,7 @@ class ExtendedRegistrationForm(forms.Form):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
             raise forms.ValidationError("Этот email уже используется.")
         return email
 
@@ -60,6 +63,18 @@ class ExtendedRegistrationForm(forms.Form):
 
         if password and password2 and password != password2:
             self.add_error('password2', "Пароли не совпадают.")
+
+        if password:
+            candidate = User(
+                username=cleaned_data.get('email', ''),
+                email=cleaned_data.get('email', ''),
+                first_name=cleaned_data.get('first_name', ''),
+                last_name=cleaned_data.get('last_name', ''),
+            )
+            try:
+                validate_password(password, user=candidate)
+            except ValidationError as error:
+                self.add_error('password', error)
         
         return cleaned_data
 
@@ -92,6 +107,11 @@ class ProductForm(forms.ModelForm):
         self.fields['price'].label = "Цена со скидкой"
         self.fields['old_price'].label = "Старая цена (без скидки)"
 
+    def clean(self):
+        cleaned_data = super().clean()
+        cleaned_data['prepared_images'] = prepare_images(self.files.getlist('images'), max_count=10)
+        return cleaned_data
+
     class Meta:
         model = Product
         fields = ['title', 'sku', 'description', 'price', 'old_price', 'quantity', 'category', 'brand']
@@ -107,6 +127,11 @@ class ProductForm(forms.ModelForm):
         }
 
 class ReviewForm(forms.ModelForm):
+    def clean(self):
+        cleaned_data = super().clean()
+        cleaned_data['prepared_images'] = prepare_images(self.files.getlist('review_images'), max_count=5)
+        return cleaned_data
+
     pros = forms.CharField(
         label='Достоинства',
         required=False,

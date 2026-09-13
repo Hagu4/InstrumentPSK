@@ -109,7 +109,13 @@ document.addEventListener('DOMContentLoaded', function() {
             data.features.forEach(feature => {
                 const specDiv = document.createElement('div');
                 specDiv.classList.add('modal-spec');
-                specDiv.innerHTML = `<div class="modal-spec-label">${feature.name}</div><div class="modal-spec-value">${feature.value}</div>`;
+                const label = document.createElement('div');
+                label.className = 'modal-spec-label';
+                label.textContent = feature.name;
+                const value = document.createElement('div');
+                value.className = 'modal-spec-value';
+                value.textContent = feature.value;
+                specDiv.append(label, value);
                 modalSpecsGrid.appendChild(specDiv);
             });
         }
@@ -126,10 +132,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Price and Discount Logic
-        modalCurrentPrice.innerHTML = `${data.price} <span class="currency">₽</span>`;
+        const setPrice = (element, price) => {
+            const currency = document.createElement('span');
+            currency.className = 'currency';
+            currency.textContent = '₽';
+            element.replaceChildren(document.createTextNode(`${price} `), currency);
+        };
+        setPrice(modalCurrentPrice, data.price);
         if (data.old_price && parseFloat(data.old_price) > parseFloat(data.price)) {
             const discount = ((parseFloat(data.old_price) - parseFloat(data.price)) / parseFloat(data.old_price)) * 100;
-            modalOldPrice.innerHTML = `${data.old_price} <span class="currency">₽</span>`;
+            setPrice(modalOldPrice, data.old_price);
             modalOldPrice.style.display = 'inline-flex';
             modalDiscountPercent.textContent = `-${discount.toFixed(0)}%`;
             modalDiscountPercent.style.display = 'inline-block';

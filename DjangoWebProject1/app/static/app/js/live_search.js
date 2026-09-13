@@ -80,32 +80,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemElement.className = 'search-results-item';
                 itemElement.href = item.url;
                 
-                // Use first image or a placeholder
-                const imageUrl = item.image_url ? item.image_url : ''; 
-                console.log('Rendering item:', item.name, 'Image URL:', imageUrl);
-
-                const imageTag = imageUrl
-                    ? `<img src="${imageUrl}" alt="${item.name}" class="item-image">`
-                    : '<div class="item-image placeholder"></div>';
-
-                // Добавляем совпавшие характеристики
-                let matchedCharsHtml = '';
-                if (item.matched_chars && item.matched_chars.length > 0) {
-                    matchedCharsHtml = `<div class="item-matched-chars">${item.matched_chars.join(', ')}</div>`;
+                const textElement = (tag, className, text) => {
+                    const element = document.createElement(tag);
+                    element.className = className;
+                    element.textContent = text ?? '';
+                    return element;
+                };
+                const picture = document.createElement(item.image_url ? 'img' : 'div');
+                picture.className = item.image_url ? 'item-image' : 'item-image placeholder';
+                if (item.image_url) {
+                    picture.src = item.image_url;
+                    picture.alt = item.name ?? '';
                 }
-                
-                itemElement.innerHTML = `
-                    ${imageTag}
-                    <div class="item-details">
-                        <span class="item-name">${item.name}</span>
-                        <span class="item-category">${item.category}</span>
-                        ${matchedCharsHtml}
-                        <div class="item-meta">
-                            <span class="item-brand">${item.brand}</span>
-                            <span class="item-sku">Арт: ${item.sku}</span>
-                        </div>
-                    </div>
-                `;
+                const details = textElement('div', 'item-details', '');
+                details.append(textElement('span', 'item-name', item.name),
+                    textElement('span', 'item-category', item.category));
+                if (item.matched_chars?.length) {
+                    details.append(textElement('div', 'item-matched-chars', item.matched_chars.join(', ')));
+                }
+                const meta = textElement('div', 'item-meta', '');
+                meta.append(textElement('span', 'item-brand', item.brand),
+                    textElement('span', 'item-sku', `Арт: ${item.sku ?? ''}`));
+                details.append(meta);
+                itemElement.append(picture, details);
                 searchResults.appendChild(itemElement);
             });
         }
