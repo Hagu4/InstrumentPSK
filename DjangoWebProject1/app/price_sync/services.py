@@ -1,7 +1,10 @@
 import hashlib
+from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -14,7 +17,13 @@ from .normalization import (
     normalize_text,
 )
 from .parsing import PriceImportValidationError, parse_supplier_xlsx
-from .pricing import calculate_old_price, choose_discount, is_large_change
+from .pricing import calculate_old_price, choose_discount, is_large_change, validate_price
+
+
+@dataclass(frozen=True)
+class ManualPriceChange:
+    product_id: int
+    new_price: Decimal
 
 
 def _hash_upload(uploaded_file) -> str:
@@ -195,6 +204,86 @@ def create_preview(uploaded_file, user) -> tuple[PriceImport, bool]:
     PriceImportRow.objects.bulk_create(audit_rows, batch_size=1000)
     refresh_import_counters(price_import)
     return price_import, True
+
+
+def create_manual_preview(changes, user) -> PriceImport:
+    changes = list(changes)
+    if not changes:
+        raise PriceImportValidationError(
+            "empty_manual_batch", "Добавьте хотя бы один товар"
+        )
+    if len(changes) > 100:
+        raise PriceImportValidationError(
+            "manual_batch_too_large", "За один раз можно изменить не более 100 товаров"
+        )
+    product_ids = [int(change.product_id) for change in changes]
+    if len(product_ids) != len(set(product_ids)):
+        raise PriceImportValidationError(
+            "duplicate_manual_product", "Товар добавлен в пакет несколько раз"
+        )
+
+    validated_changes = []
+    for change in changes:
+        try:
+            new_price = validate_price(change.new_price)
+        except ValidationError:
+            raise PriceImportValidationError(
+                "invalid_manual_price", "Введите положительную цену в допустимом диапазоне"
+            )
+        validated_changes.append(ManualPriceChange(int(change.product_id), new_price))
+
+    products = {
+        product.pk: product
+        for product in _catalog_products().filter(pk__in=product_ids)
+    }
+    if len(products) != len(product_ids):
+        raise PriceImportValidationError(
+            "unknown_manual_product", "Один из выбранных товаров не найден"
+        )
+
+    price_import = PriceImport.objects.create(
+        source_type=PriceImport.SourceType.MANUAL,
+        uploaded_by=user,
+    )
+    preview_at = timezone.now()
+    audit_rows = []
+    for row_number, change in enumerate(validated_changes, start=1):
+        product = products[change.product_id]
+        discount = choose_discount(
+            product.discount_percent,
+            change.new_price,
+            product.old_price,
+        )
+        anomaly = is_large_change(product.price, change.new_price)
+        audit_rows.append(
+            PriceImportRow(
+                price_import=price_import,
+                row_number=row_number,
+                source_sku=product.sku or "",
+                source_brand=product.brand.name if product.brand else "",
+                source_title=product.title,
+                source_price=change.new_price,
+                product=product,
+                match_method="manual_price",
+                status=PriceImportRow.Status.MATCHED,
+                diagnostic_code="large_change" if anomaly else "",
+                before_price=product.price,
+                before_old_price=product.old_price,
+                before_discount_percent=product.discount_percent,
+                before_price_updated_at=product.price_updated_at,
+                after_price=change.new_price,
+                after_old_price=calculate_old_price(change.new_price, discount),
+                after_discount_percent=discount,
+                after_price_updated_at=(
+                    preview_at
+                    if change.new_price != product.price
+                    else product.price_updated_at
+                ),
+            )
+        )
+    PriceImportRow.objects.bulk_create(audit_rows, batch_size=100)
+    refresh_import_counters(price_import)
+    return price_import
 
 
 @transaction.atomic
