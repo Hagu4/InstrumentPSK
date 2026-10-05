@@ -45,6 +45,22 @@ class ImportAlreadyApplied(PriceImportValidationError):
         super().__init__("import_already_applied", "Эта операция уже применена")
 
 
+class RollbackNotLatest(PriceImportValidationError):
+    def __init__(self):
+        super().__init__(
+            "rollback_not_latest",
+            "Откат доступен только для самого последнего обновления цен",
+        )
+
+
+class RollbackConflict(PriceImportValidationError):
+    def __init__(self):
+        super().__init__(
+            "rollback_conflict",
+            "После обновления одна из цен была изменена вручную. Откат остановлен.",
+        )
+
+
 def _hash_upload(uploaded_file) -> str:
     digest = hashlib.sha256()
     uploaded_file.seek(0)
@@ -383,6 +399,77 @@ def apply_import(import_id: int, user) -> PriceImport:
     price_import.applied_by = user
     price_import.applied_at = timezone.now()
     price_import.save(update_fields=("status", "applied_by", "applied_at"))
+    transaction.on_commit(cache.clear)
+    return price_import
+
+
+@transaction.atomic
+def rollback_import(import_id: int, user) -> PriceImport:
+    price_import = PriceImport.objects.select_for_update().get(pk=import_id)
+    latest_success = (
+        PriceImport.objects.select_for_update()
+        .filter(
+            status__in=(
+                PriceImport.Status.APPLIED,
+                PriceImport.Status.ROLLED_BACK,
+            ),
+            applied_at__isnull=False,
+        )
+        .order_by("-applied_at", "-pk")
+        .first()
+    )
+    if (
+        latest_success is None
+        or latest_success.pk != price_import.pk
+        or price_import.status != PriceImport.Status.APPLIED
+    ):
+        raise RollbackNotLatest()
+
+    rows = list(
+        price_import.rows.select_for_update()
+        .select_related("product")
+        .filter(status=PriceImportRow.Status.MATCHED)
+    )
+    product_ids = [row.product_id for row in rows]
+    products = {
+        product.pk: product
+        for product in Product.objects.select_for_update().filter(pk__in=product_ids)
+    }
+    if len(products) != len(product_ids):
+        raise RollbackConflict()
+
+    for row in rows:
+        product = products[row.product_id]
+        current_snapshot = (
+            product.price,
+            product.old_price,
+            product.discount_percent,
+            product.price_updated_at,
+        )
+        imported_snapshot = (
+            row.after_price,
+            row.after_old_price,
+            row.after_discount_percent,
+            row.after_price_updated_at,
+        )
+        if current_snapshot != imported_snapshot:
+            raise RollbackConflict()
+        product.price = row.before_price
+        product.old_price = row.before_old_price
+        product.discount_percent = row.before_discount_percent
+        product.price_updated_at = row.before_price_updated_at
+
+    Product.objects.bulk_update(
+        list(products.values()),
+        fields=("price", "old_price", "discount_percent", "price_updated_at"),
+        batch_size=1000,
+    )
+    price_import.status = PriceImport.Status.ROLLED_BACK
+    price_import.rolled_back_by = user
+    price_import.rolled_back_at = timezone.now()
+    price_import.save(
+        update_fields=("status", "rolled_back_by", "rolled_back_at")
+    )
     transaction.on_commit(cache.clear)
     return price_import
 
