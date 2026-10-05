@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import posixpath
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -252,6 +253,16 @@ STORAGES = {
 
 MEDIA_URL = '/media/'  # URL-префикс для медиафайлов
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Путь к папке с медиафайлами
+
+PRICE_IMPORT_ROOT = Path(
+    os.environ.get('PRICE_IMPORT_ROOT', Path(BASE_DIR) / 'private-price-imports')
+).resolve()
+PRICE_IMPORT_MAX_BYTES = int(os.environ.get('PRICE_IMPORT_MAX_BYTES', 10 * 1024 * 1024))
+PRICE_IMPORT_MAX_ROWS = int(os.environ.get('PRICE_IMPORT_MAX_ROWS', 100_000))
+PRICE_IMPORT_MAX_UNCOMPRESSED_BYTES = int(
+    os.environ.get('PRICE_IMPORT_MAX_UNCOMPRESSED_BYTES', 100 * 1024 * 1024)
+)
+PRICE_IMPORT_SUPPLIER = 'stiooo'
 
 DEFAULT_CHARSET = 'utf-8'
 FILE_CHARSET = 'utf-8'

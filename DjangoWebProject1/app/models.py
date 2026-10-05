@@ -188,6 +188,17 @@ class Product(models.Model):
     description = models.TextField(verbose_name="Описание", blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, db_index=True, verbose_name="Цена")
     old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Старая цена (без скидки)')
+    discount_percent = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(10), MaxValueValidator(30)],
+        verbose_name='Постоянная скидка, %',
+    )
+    price_updated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Цена обновлена',
+    )
     quantity = models.PositiveIntegerField(default=0, db_index=True, verbose_name="Количество на складе")
     added_date = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Дата добавления")
     author = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, verbose_name="Автор")
@@ -718,3 +729,6 @@ class PromoCode(models.Model):
 @admin.register(PromoCode)
 class PromoCodeAdmin(admin.ModelAdmin):
     list_display = ('code', 'is_active', 'used_count')
+
+
+from .price_sync.models import PriceImport, PriceImportRow, SupplierProductLink  # noqa: E402,F401
