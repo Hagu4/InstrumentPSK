@@ -72,14 +72,19 @@ class PriceSyncParsingTests(SimpleTestCase):
         with self.assertRaisesRegex(PriceImportValidationError, "invalid_price"):
             parse_supplier_xlsx(upload)
 
-    def test_rejects_conflicting_duplicate_sku_prices(self):
+    def test_conflicting_duplicate_sku_prices_are_marked_for_safe_skipping(self):
         upload = workbook_upload([
             ("WORTEX", "Дрель", "A-1", 900, 1000, "", "", "шт"),
             ("WORTEX", "Дрель", "A 1", 900, 1200, "", "", "шт"),
+            ("WORTEX", "Шуруповёрт", "B-2", 900, 1500, "", "", "шт"),
         ])
 
-        with self.assertRaisesRegex(PriceImportValidationError, "duplicate_conflicting_price"):
-            parse_supplier_xlsx(upload)
+        rows = parse_supplier_xlsx(upload)
+
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0].diagnostic_code, "duplicate_conflicting_price")
+        self.assertEqual(rows[1].diagnostic_code, "duplicate_conflicting_price")
+        self.assertEqual(rows[2].diagnostic_code, "")
 
     def test_identical_duplicate_is_returned_as_skipped_diagnostic(self):
         upload = workbook_upload([

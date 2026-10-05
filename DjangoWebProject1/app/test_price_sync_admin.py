@@ -38,7 +38,7 @@ class PriceSyncAdminTests(TestCase):
         )
 
     def test_price_import_history_uses_russian_column_and_filter_labels(self):
-        PriceImport.objects.create(
+        price_import = PriceImport.objects.create(
             source_type=PriceImport.SourceType.SUPPLIER_XLSX,
             original_name="prices.xlsx",
             uploaded_by=self.superuser,
@@ -59,6 +59,29 @@ class PriceSyncAdminTests(TestCase):
             "Дата применения",
         ):
             self.assertContains(response, label)
+        self.assertContains(
+            response,
+            reverse("admin:app_priceimport_preview", args=[price_import.pk]),
+        )
+
+    def test_default_change_url_redirects_to_private_import_preview(self):
+        price_import = PriceImport.objects.create(
+            source_type=PriceImport.SourceType.SUPPLIER_XLSX,
+            source_file="2026/10/private.xlsx",
+            original_name="prices.xlsx",
+            uploaded_by=self.superuser,
+        )
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(
+            reverse("admin:app_priceimport_change", args=[price_import.pk])
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("admin:app_priceimport_preview", args=[price_import.pk]),
+            fetch_redirect_response=False,
+        )
 
     def test_preview_hides_automatically_skipped_supplier_rows_by_default(self):
         price_import = PriceImport.objects.create(

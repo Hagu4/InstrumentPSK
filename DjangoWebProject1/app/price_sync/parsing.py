@@ -118,7 +118,8 @@ def parse_supplier_xlsx(file_obj) -> list[SupplierRow]:
             )
 
         parsed_rows = []
-        seen_skus: dict[str, tuple[Decimal, int]] = {}
+        sku_row_indexes: dict[str, list[int]] = {}
+        sku_prices: dict[str, set[Decimal]] = {}
         for cells in sheet.iter_rows(min_row=2):
             if all(cell.value in (None, "") for cell in cells):
                 continue
@@ -155,20 +156,25 @@ def parse_supplier_xlsx(file_obj) -> list[SupplierRow]:
             )
             normalized_sku = normalize_sku(sku)
             if normalized_sku:
-                previous = seen_skus.get(normalized_sku)
-                if previous and previous[0] != price:
-                    raise PriceImportValidationError(
-                        "duplicate_conflicting_price",
-                        "Один артикул содержит разные цены",
-                    )
-                if previous:
-                    supplier_row = replace(
-                        supplier_row,
-                        diagnostic_code="duplicate_same_price",
-                    )
-                else:
-                    seen_skus[normalized_sku] = (price, cells[0].row)
+                sku_row_indexes.setdefault(normalized_sku, []).append(len(parsed_rows))
+                sku_prices.setdefault(normalized_sku, set()).add(price)
             parsed_rows.append(supplier_row)
+
+        for normalized_sku, indexes in sku_row_indexes.items():
+            if len(indexes) < 2:
+                continue
+            if len(sku_prices[normalized_sku]) > 1:
+                for index in indexes:
+                    parsed_rows[index] = replace(
+                        parsed_rows[index],
+                        diagnostic_code="duplicate_conflicting_price",
+                    )
+                continue
+            for index in indexes[1:]:
+                parsed_rows[index] = replace(
+                    parsed_rows[index],
+                    diagnostic_code="duplicate_same_price",
+                )
         return parsed_rows
     except PriceImportValidationError:
         raise

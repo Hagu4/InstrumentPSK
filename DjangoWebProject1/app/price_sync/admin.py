@@ -6,6 +6,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
+from django.utils.html import format_html
 from django.views.decorators.http import require_POST
 
 from app.models import PriceImport, PriceImportRow, Product
@@ -30,7 +31,7 @@ from .services import (
 class PriceImportAdmin(admin.ModelAdmin):
     change_list_template = "admin/app/priceimport/change_list.html"
     list_display = (
-        "id",
+        "preview_link",
         "source_type",
         "status",
         "original_name",
@@ -45,6 +46,17 @@ class PriceImportAdmin(admin.ModelAdmin):
     search_fields = ("original_name", "file_sha256", "uploaded_by__username")
     readonly_fields = tuple(field.name for field in PriceImport._meta.fields)
     actions = None
+    list_display_links = None
+
+    @admin.display(description="ID", ordering="id")
+    def preview_link(self, obj):
+        url = reverse("admin:app_priceimport_preview", args=[obj.pk])
+        return format_html('<a href="{}">{}</a>', url, obj.pk)
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        return HttpResponseRedirect(
+            reverse("admin:app_priceimport_preview", args=[object_id])
+        )
 
     def has_add_permission(self, request):
         return False

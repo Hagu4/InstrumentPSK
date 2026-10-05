@@ -181,7 +181,10 @@ def create_preview(uploaded_file, user) -> tuple[PriceImport, bool]:
     preview_at = timezone.now()
     audit_rows = []
     for source_row in source_rows:
-        if source_row.diagnostic_code == "duplicate_same_price":
+        if source_row.diagnostic_code in {
+            "duplicate_same_price",
+            "duplicate_conflicting_price",
+        }:
             audit_rows.append(
                 PriceImportRow(
                     price_import=price_import,
@@ -191,7 +194,7 @@ def create_preview(uploaded_file, user) -> tuple[PriceImport, bool]:
                     source_title=source_row.title,
                     source_price=source_row.recommended_price,
                     status=PriceImportRow.Status.SKIPPED,
-                    diagnostic_code="duplicate_same_price",
+                    diagnostic_code=source_row.diagnostic_code,
                 )
             )
             continue

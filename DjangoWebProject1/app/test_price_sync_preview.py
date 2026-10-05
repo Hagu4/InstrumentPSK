@@ -104,6 +104,38 @@ class PriceSyncPreviewTests(TestCase):
         self.assertEqual(row.diagnostic_code, "not_in_catalog")
         self.assertEqual(import_obj.status, import_obj.Status.READY)
 
+    def test_conflicting_duplicate_skus_are_skipped_without_blocking_other_rows(self):
+        second_product = Product.objects.create(
+            title="Шуруповёрт 18 В",
+            sku="B2",
+            brand=self.brand,
+            price=Decimal("1400.00"),
+        )
+        upload = price_workbook([
+            ("WORTEX", "Дрель 18 В", "A-1", 1000, 1000, "", "", "шт"),
+            ("WORTEX", "Дрель 18 В", "A 1", 1200, 1200, "", "", "шт"),
+            ("WORTEX", "Шуруповёрт 18 В", "B2", 1500, 1500, "", "", "шт"),
+        ])
+
+        import_obj, created = create_preview(upload, self.user)
+
+        self.assertTrue(created)
+        self.assertEqual(import_obj.total_rows, 3)
+        self.assertEqual(import_obj.matched_rows, 1)
+        self.assertEqual(import_obj.skipped_rows, 2)
+        self.assertEqual(
+            set(
+                import_obj.rows.filter(
+                    diagnostic_code="duplicate_conflicting_price"
+                ).values_list("status", flat=True)
+            ),
+            {PriceImportRow.Status.SKIPPED},
+        )
+        self.assertEqual(
+            import_obj.rows.get(product=second_product).status,
+            PriceImportRow.Status.MATCHED,
+        )
+
     def test_change_over_fifty_percent_blocks_ready_state(self):
         import_obj, _ = create_preview(self.upload(price=151), self.user)
 
