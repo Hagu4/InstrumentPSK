@@ -85,6 +85,7 @@ JAZZMIN_SETTINGS = {
     "order_with_respect_to": [
         "auth",
         "app.Product",
+        "app.PriceImport",
         "app.Category",
         "app.Characteristic",
         "app.Review",
@@ -98,6 +99,7 @@ JAZZMIN_SETTINGS = {
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "app.Product": "fas fa-box-open",
+        "app.PriceImport": "fas fa-ruble-sign",
         "app.Category": "fas fa-tags",
         "app.Brand": "fas fa-copyright",
         "app.RepairRequest": "fas fa-wrench",

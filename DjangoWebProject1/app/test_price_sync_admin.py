@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -28,6 +29,13 @@ class PriceSyncAdminTests(TestCase):
         self.history_url = reverse("admin:app_priceimport_changelist")
         self.upload_url = reverse("admin:app_priceimport_upload")
         self.manual_url = reverse("admin:app_priceimport_manual")
+
+    def test_price_import_has_a_visible_sidebar_position_and_icon(self):
+        self.assertIn("app.PriceImport", settings.JAZZMIN_SETTINGS["order_with_respect_to"])
+        self.assertEqual(
+            settings.JAZZMIN_SETTINGS["icons"]["app.PriceImport"],
+            "fas fa-ruble-sign",
+        )
 
     def test_public_and_staff_without_permission_cannot_view_imports(self):
         self.assertEqual(self.client.get(self.history_url).status_code, 302)
