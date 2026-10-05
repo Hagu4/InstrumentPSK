@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db import DatabaseError
 from django.test import TransactionTestCase
 
-from app.models import PriceImport, Product
+from app.models import PriceImport, PriceImportRow, Product
 from app.price_sync.services import (
     ImportAlreadyApplied,
     ImportConflict,
@@ -12,6 +12,7 @@ from app.price_sync.services import (
     ManualPriceChange,
     apply_import,
     create_manual_preview,
+    refresh_import_counters,
 )
 
 
@@ -106,3 +107,22 @@ class PriceSyncApplyTests(TransactionTestCase):
         second.refresh_from_db()
         self.assertEqual(self.product.price, Decimal("100.00"))
         self.assertEqual(second.price, Decimal("200.00"))
+
+    def test_apply_safely_skips_rows_that_still_need_review(self):
+        import_obj = self.ready_import()
+        review_row = PriceImportRow.objects.create(
+            price_import=import_obj,
+            row_number=2,
+            source_title="Неоднозначный товар",
+            source_price=Decimal("500.00"),
+            status=PriceImportRow.Status.NEEDS_REVIEW,
+        )
+        refresh_import_counters(import_obj)
+
+        apply_import(import_obj.pk, self.user)
+
+        review_row.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(review_row.status, PriceImportRow.Status.SKIPPED)
+        self.assertEqual(review_row.diagnostic_code, "not_selected_for_apply")
+        self.assertEqual(self.product.price, Decimal("120.00"))

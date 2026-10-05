@@ -6,8 +6,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from openpyxl import Workbook
 
-from app.models import Brand, PriceImportRow, Product
-from app.price_sync.services import create_preview
+from app.models import Brand, PriceImport, PriceImportRow, Product
+from app.price_sync.services import confirm_anomalies, create_preview
 
 
 def price_workbook(rows, filename="prices.xlsx"):
@@ -141,6 +141,36 @@ class PriceSyncPreviewTests(TestCase):
 
         self.assertEqual(import_obj.anomaly_rows, 1)
         self.assertEqual(import_obj.status, import_obj.Status.DRAFT)
+
+    def test_confirming_anomalies_allows_matched_rows_despite_review_rows(self):
+        import_obj = PriceImport.objects.create(
+            source_type=PriceImport.SourceType.MANUAL,
+            uploaded_by=self.user,
+        )
+        PriceImportRow.objects.create(
+            price_import=import_obj,
+            row_number=1,
+            source_title=self.product.title,
+            source_price=Decimal("200.00"),
+            product=self.product,
+            status=PriceImportRow.Status.MATCHED,
+            diagnostic_code="large_change",
+            before_price=Decimal("100.00"),
+            after_price=Decimal("200.00"),
+        )
+        PriceImportRow.objects.create(
+            price_import=import_obj,
+            row_number=2,
+            source_title="Сомнительное соответствие",
+            source_price=Decimal("300.00"),
+            status=PriceImportRow.Status.NEEDS_REVIEW,
+        )
+
+        confirm_anomalies(import_obj.pk)
+
+        import_obj.refresh_from_db()
+        self.assertEqual(import_obj.review_rows, 1)
+        self.assertEqual(import_obj.status, PriceImport.Status.READY)
 
     def test_summary_counts_increase_and_change(self):
         import_obj, _ = create_preview(self.upload(price=120), self.user)

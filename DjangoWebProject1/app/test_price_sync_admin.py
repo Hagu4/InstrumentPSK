@@ -267,6 +267,57 @@ class PriceSyncAdminTests(TestCase):
         self.assertContains(response, 'type="number"')
         self.assertContains(response, "Сопоставить")
 
+    def test_matched_row_can_be_removed_from_preview(self):
+        from app.price_sync.services import ManualPriceChange, create_manual_preview
+
+        import_obj = create_manual_preview(
+            [ManualPriceChange(self.product.pk, Decimal("1250.00"))],
+            self.superuser,
+        )
+        row = import_obj.rows.get()
+        self.client.force_login(self.superuser)
+
+        preview = self.client.get(
+            reverse("admin:app_priceimport_preview", args=[import_obj.pk])
+        )
+        self.assertContains(preview, "Убрать из обновления")
+
+        self.client.post(
+            reverse("admin:app_priceimport_skip", args=[import_obj.pk, row.pk])
+        )
+
+        row.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(row.status, PriceImportRow.Status.SKIPPED)
+        self.assertEqual(self.product.price, Decimal("1000.00"))
+
+    def test_apply_action_is_above_table_and_price_direction_is_visible(self):
+        from app.price_sync.services import ManualPriceChange, create_manual_preview
+
+        cheaper = Product.objects.create(
+            title="Товар со снижением цены",
+            sku="ADMIN-DOWN-1",
+            price=Decimal("2000.00"),
+        )
+        import_obj = create_manual_preview(
+            [
+                ManualPriceChange(self.product.pk, Decimal("1250.00")),
+                ManualPriceChange(cheaper.pk, Decimal("1750.00")),
+            ],
+            self.superuser,
+        )
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(
+            reverse("admin:app_priceimport_preview", args=[import_obj.pk])
+        )
+        content = response.content.decode()
+
+        self.assertContains(response, "Применить найденные цены")
+        self.assertLess(content.index("Применить найденные цены"), content.index("<table"))
+        self.assertContains(response, 'class="price-change price-increase"')
+        self.assertContains(response, 'class="price-change price-decrease"')
+
     def test_applied_import_anomalies_cannot_be_changed(self):
         import_obj = PriceImport.objects.create(
             source_type=PriceImport.SourceType.MANUAL,

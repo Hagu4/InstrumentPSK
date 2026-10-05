@@ -40,7 +40,7 @@ def workbook_upload(rows, headers=HEADERS, filename="prices.xlsx", configure=Non
 
 
 class PriceSyncParsingTests(SimpleTestCase):
-    def test_reads_real_supplier_headers_and_recommended_price(self):
+    def test_uses_rrc_shop_instead_of_recommended_price(self):
         rows = parse_supplier_xlsx(
             workbook_upload([
                 ("WORTEX", "Дрель 18 В", "00123", 900, 1000, "", "", "шт")
@@ -48,7 +48,7 @@ class PriceSyncParsingTests(SimpleTestCase):
         )
 
         self.assertEqual(rows[0].sku, "00123")
-        self.assertEqual(rows[0].recommended_price, Decimal("1000.00"))
+        self.assertEqual(rows[0].recommended_price, Decimal("900.00"))
 
     def test_preserves_numeric_sku_using_excel_number_format(self):
         upload = workbook_upload(
@@ -58,7 +58,7 @@ class PriceSyncParsingTests(SimpleTestCase):
 
         self.assertEqual(parse_supplier_xlsx(upload)[0].sku, "00123")
 
-    def test_rejects_missing_recommended_price_column(self):
+    def test_rejects_missing_rrc_shop_column(self):
         upload = workbook_upload([], headers=("BRAND", "NAIMEN", "ARTIKUL"))
 
         with self.assertRaisesRegex(PriceImportValidationError, "missing_columns"):
@@ -66,7 +66,7 @@ class PriceSyncParsingTests(SimpleTestCase):
 
     def test_formula_is_not_executed_or_accepted_without_cached_value(self):
         upload = workbook_upload([
-            ("WORTEX", "Дрель", "A1", 900, "=1+1", "", "", "шт")
+            ("WORTEX", "Дрель", "A1", "=1+1", 900, "", "", "шт")
         ])
 
         with self.assertRaisesRegex(PriceImportValidationError, "invalid_price"):
@@ -74,8 +74,8 @@ class PriceSyncParsingTests(SimpleTestCase):
 
     def test_conflicting_duplicate_sku_prices_are_marked_for_safe_skipping(self):
         upload = workbook_upload([
-            ("WORTEX", "Дрель", "A-1", 900, 1000, "", "", "шт"),
-            ("WORTEX", "Дрель", "A 1", 900, 1200, "", "", "шт"),
+            ("WORTEX", "Дрель", "A-1", 1000, 900, "", "", "шт"),
+            ("WORTEX", "Дрель", "A 1", 1200, 900, "", "", "шт"),
             ("WORTEX", "Шуруповёрт", "B-2", 900, 1500, "", "", "шт"),
         ])
 

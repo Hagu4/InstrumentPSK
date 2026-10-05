@@ -11,7 +11,7 @@ from .normalization import normalize_sku
 from .pricing import validate_price
 
 
-REQUIRED_COLUMNS = ("BRAND", "NAIMEN", "ARTIKUL", "REKOMEND_CENA")
+REQUIRED_COLUMNS = ("BRAND", "NAIMEN", "ARTIKUL", "RRC_SHOP")
 
 
 class PriceImportValidationError(Exception):
@@ -136,7 +136,7 @@ def parse_supplier_xlsx(file_obj) -> list[SupplierRow]:
                 required=True,
             )
             sku = _sku_from_cell(cells[header_map["ARTIKUL"]])
-            raw_price = cells[header_map["REKOMEND_CENA"]].value
+            raw_price = cells[header_map["RRC_SHOP"]].value
             try:
                 if isinstance(raw_price, str):
                     raw_price = raw_price.replace(" ", "").replace(",", ".")

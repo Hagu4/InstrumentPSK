@@ -122,9 +122,7 @@ def refresh_import_counters(price_import: PriceImport) -> None:
         row.after_price < row.before_price for row in matched
     )
     price_import.anomaly_rows = len(anomalies)
-    ready = price_import.review_rows == 0 and all(
-        row.anomaly_confirmed for row in anomalies
-    )
+    ready = all(row.anomaly_confirmed for row in anomalies)
     price_import.status = (
         PriceImport.Status.READY if ready else PriceImport.Status.DRAFT
     )
@@ -359,6 +357,20 @@ def apply_import(import_id: int, user) -> PriceImport:
         with price_import.source_file.open("rb") as source_file:
             if _hash_upload(source_file) != price_import.file_sha256:
                 raise ImportConflict()
+
+    price_import.rows.filter(
+        status__in=(PriceImportRow.Status.NEEDS_REVIEW, PriceImportRow.Status.INVALID)
+    ).update(
+        status=PriceImportRow.Status.SKIPPED,
+        diagnostic_code="not_selected_for_apply",
+        product=None,
+        candidate_product_ids=[],
+        after_price=None,
+        after_old_price=None,
+        after_discount_percent=None,
+        after_price_updated_at=None,
+    )
+    refresh_import_counters(price_import)
 
     rows = list(
         price_import.rows.select_for_update()

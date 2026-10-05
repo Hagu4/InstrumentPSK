@@ -5,7 +5,7 @@
 {% block content %}
 <div class="price-panel narrow">
   <h1>Загрузить прайс поставщика</h1>
-  <p class="help">Используется колонка REKOMEND_CENA. До подтверждения цены товаров не изменятся.</p>
+  <p class="help">Используется колонка RRC_SHOP. До подтверждения цены товаров не изменятся.</p>
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.as_p }}

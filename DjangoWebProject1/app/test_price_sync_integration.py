@@ -19,7 +19,7 @@ def make_workbook(rows):
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Sheet1"
-    sheet.append(("BRAND", "NAIMEN", "ARTIKUL", "REKOMEND_CENA"))
+    sheet.append(("BRAND", "NAIMEN", "ARTIKUL", "RRC_SHOP"))
     for row in rows:
         sheet.append(row)
     stream = BytesIO()
