@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from app.models import PriceImport, Product
+from app.models import PriceImport, PriceImportRow, Product
 
 
 class PriceSyncAdminTests(TestCase):
@@ -70,6 +70,98 @@ class PriceSyncAdminTests(TestCase):
         self.assertContains(response, "Предварительный просмотр")
         self.product.refresh_from_db()
         self.assertEqual(self.product.price, Decimal("1000.00"))
+
+    def test_applied_import_rows_cannot_be_resolved(self):
+        import_obj = PriceImport.objects.create(
+            source_type=PriceImport.SourceType.SUPPLIER_XLSX,
+            status=PriceImport.Status.APPLIED,
+            uploaded_by=self.superuser,
+        )
+        row = PriceImportRow.objects.create(
+            price_import=import_obj,
+            row_number=2,
+            source_title="Неизвестный товар",
+            source_price=Decimal("120.00"),
+            status=PriceImportRow.Status.NEEDS_REVIEW,
+        )
+        self.client.force_login(self.superuser)
+
+        self.client.post(
+            reverse(
+                "admin:app_priceimport_resolve", args=[import_obj.pk, row.pk]
+            ),
+            {"product": self.product.pk},
+        )
+
+        row.refresh_from_db()
+        import_obj.refresh_from_db()
+        self.assertIsNone(row.product_id)
+        self.assertEqual(import_obj.status, PriceImport.Status.APPLIED)
+
+    def test_preview_offers_candidate_resolution_and_manual_product_id(self):
+        candidate = Product.objects.create(
+            title="Подходящий кандидат",
+            sku="CANDIDATE-1",
+            price=Decimal("900.00"),
+        )
+        import_obj = PriceImport.objects.create(
+            source_type=PriceImport.SourceType.SUPPLIER_XLSX,
+            status=PriceImport.Status.DRAFT,
+            uploaded_by=self.superuser,
+        )
+        PriceImportRow.objects.create(
+            price_import=import_obj,
+            row_number=2,
+            source_title="Кандидат поставщика",
+            source_price=Decimal("950.00"),
+            candidate_product_ids=[candidate.pk],
+            status=PriceImportRow.Status.NEEDS_REVIEW,
+        )
+        PriceImportRow.objects.create(
+            price_import=import_obj,
+            row_number=3,
+            source_title="Без кандидатов",
+            source_price=Decimal("750.00"),
+            status=PriceImportRow.Status.NEEDS_REVIEW,
+        )
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(
+            reverse("admin:app_priceimport_preview", args=[import_obj.pk])
+        )
+
+        self.assertContains(response, candidate.title)
+        self.assertContains(response, 'name="product"')
+        self.assertContains(response, 'type="number"')
+        self.assertContains(response, "Сопоставить")
+
+    def test_applied_import_anomalies_cannot_be_changed(self):
+        import_obj = PriceImport.objects.create(
+            source_type=PriceImport.SourceType.MANUAL,
+            status=PriceImport.Status.APPLIED,
+            uploaded_by=self.superuser,
+        )
+        row = PriceImportRow.objects.create(
+            price_import=import_obj,
+            row_number=1,
+            source_title=self.product.title,
+            source_price=Decimal("2000.00"),
+            product=self.product,
+            status=PriceImportRow.Status.MATCHED,
+            diagnostic_code="large_change",
+            anomaly_confirmed=False,
+        )
+        self.client.force_login(self.superuser)
+
+        self.client.post(
+            reverse(
+                "admin:app_priceimport_confirm_anomalies", args=[import_obj.pk]
+            ),
+            {"confirmed": "on", "row_ids": str(row.pk)},
+        )
+
+        row.refresh_from_db()
+        self.assertFalse(row.anomaly_confirmed)
 
     def test_price_timestamp_is_present_in_admin_but_absent_from_public_page(self):
         self.client.force_login(self.superuser)

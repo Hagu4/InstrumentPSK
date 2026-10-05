@@ -519,6 +519,31 @@ def rollback_import(import_id: int, user) -> PriceImport:
     return price_import
 
 
+def _require_editable_import(price_import: PriceImport) -> None:
+    if price_import.status not in (
+        PriceImport.Status.DRAFT,
+        PriceImport.Status.READY,
+    ):
+        raise PriceImportValidationError(
+            "import_not_editable",
+            "Эту операцию больше нельзя редактировать",
+        )
+
+
+@transaction.atomic
+def confirm_anomalies(import_id: int, row_ids=None) -> PriceImport:
+    price_import = PriceImport.objects.select_for_update().get(pk=import_id)
+    _require_editable_import(price_import)
+    rows = price_import.rows.select_for_update().filter(
+        diagnostic_code="large_change"
+    )
+    if row_ids:
+        rows = rows.filter(pk__in=row_ids)
+    rows.update(anomaly_confirmed=True)
+    refresh_import_counters(price_import)
+    return price_import
+
+
 @transaction.atomic
 def skip_row(row: PriceImportRow, user) -> PriceImportRow:
     row = PriceImportRow.objects.select_for_update().select_related("price_import").get(
@@ -550,6 +575,7 @@ def resolve_row(row: PriceImportRow, product: Product, user) -> PriceImportRow:
     row = PriceImportRow.objects.select_for_update().select_related("price_import").get(
         pk=row.pk
     )
+    _require_editable_import(row.price_import)
     product = Product.objects.select_for_update().get(pk=product.pk)
     if row.price_import.rows.exclude(pk=row.pk).filter(product=product).exists():
         raise PriceImportValidationError(

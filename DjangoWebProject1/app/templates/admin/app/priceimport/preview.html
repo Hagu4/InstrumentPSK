@@ -19,7 +19,23 @@
     <thead><tr><th>Строка</th><th>Артикул</th><th>Название</th><th>Товар</th><th>Было</th><th>Станет</th><th>Скидка</th><th>Зачёркнутая</th><th>Состояние</th><th>Действия</th></tr></thead>
     <tbody>{% for row in page %}<tr>
       <td>{{ row.row_number }}</td><td>{{ row.source_sku|default:"—" }}</td><td>{{ row.source_title }}</td><td>{{ row.product|default:"Не выбран" }}</td><td>{{ row.before_price|default:"—" }}</td><td>{{ row.after_price|default:row.source_price }}</td><td>{{ row.after_discount_percent|default:"—" }}{% if row.after_discount_percent %}%{% endif %}</td><td>{{ row.after_old_price|default:"—" }}</td><td>{{ row.get_status_display }}</td>
-      <td>{% if row.status == 'needs_review' %}<form class="inline-form" method="post" action="{% url 'admin:app_priceimport_skip' price_import.pk row.pk %}">{% csrf_token %}<button type="submit">Пропустить</button></form>{% else %}—{% endif %}</td>
+      <td>{% if row.status == 'needs_review' %}
+        <form class="resolve-form" method="post" action="{% url 'admin:app_priceimport_resolve' price_import.pk row.pk %}">{% csrf_token %}
+          {% if row.candidate_products %}
+            <select name="product" required aria-label="Выберите товар">
+              <option value="">Кандидаты…</option>
+              {% for candidate in row.candidate_products %}<option value="{{ candidate.pk }}">#{{ candidate.pk }} · {{ candidate.title }}{% if candidate.sku %} · {{ candidate.sku }}{% endif %}</option>{% endfor %}
+            </select>
+          {% else %}
+            <input type="number" min="1" name="product" required placeholder="ID товара" aria-label="ID товара">
+          {% endif %}
+          <button type="submit">Сопоставить</button>
+        </form>
+        <div class="row-secondary-actions">
+          <a href="{% url 'admin:app_product_changelist' %}?q={{ row.source_title|urlencode }}" target="_blank" rel="noopener">Найти товар</a>
+          <form class="inline-form" method="post" action="{% url 'admin:app_priceimport_skip' price_import.pk row.pk %}">{% csrf_token %}<button type="submit">Пропустить</button></form>
+        </div>
+      {% else %}—{% endif %}</td>
     </tr>{% empty %}<tr><td colspan="10">Строк нет.</td></tr>{% endfor %}</tbody>
   </table></div>
   <div class="price-actions">

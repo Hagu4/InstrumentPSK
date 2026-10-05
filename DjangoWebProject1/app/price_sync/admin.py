@@ -18,9 +18,9 @@ from .forms import (
 )
 from .parsing import PriceImportValidationError
 from .services import (
+    confirm_anomalies,
     create_manual_preview,
     create_preview,
-    refresh_import_counters,
     resolve_row,
     skip_row,
 )
@@ -138,6 +138,23 @@ class PriceImportAdmin(admin.ModelAdmin):
                 | Q(product__title__icontains=query)
             )
         page = Paginator(rows, 50).get_page(request.GET.get("page"))
+        candidate_ids = {
+            product_id
+            for row in page.object_list
+            for product_id in (row.candidate_product_ids or [])
+        }
+        candidate_products = {
+            product.pk: product
+            for product in Product.objects.select_related("brand").filter(
+                pk__in=candidate_ids
+            )
+        }
+        for row in page.object_list:
+            row.candidate_products = [
+                candidate_products[product_id]
+                for product_id in (row.candidate_product_ids or [])
+                if product_id in candidate_products
+            ]
         latest_success = PriceImport.objects.filter(applied_at__isnull=False).order_by("-applied_at", "-pk").first()
         return TemplateResponse(
             request,
@@ -157,8 +174,12 @@ class PriceImportAdmin(admin.ModelAdmin):
         row = get_object_or_404(PriceImportRow, pk=row_id, price_import_id=pk)
         form = ResolvePriceImportRowForm(request.POST)
         if form.is_valid():
-            resolve_row(row, form.cleaned_data["product"], request.user)
-            messages.success(request, "Соответствие сохранено.")
+            try:
+                resolve_row(row, form.cleaned_data["product"], request.user)
+            except PriceImportValidationError as error:
+                messages.error(request, error.message)
+            else:
+                messages.success(request, "Соответствие сохранено.")
         else:
             messages.error(request, "Выберите существующий товар.")
         return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
@@ -166,8 +187,12 @@ class PriceImportAdmin(admin.ModelAdmin):
     def skip_view(self, request, pk, row_id):
         self._require(request, "app.resolve_priceimport")
         row = get_object_or_404(PriceImportRow, pk=row_id, price_import_id=pk)
-        skip_row(row, request.user)
-        messages.success(request, "Строка пропущена.")
+        try:
+            skip_row(row, request.user)
+        except PriceImportValidationError as error:
+            messages.error(request, error.message)
+        else:
+            messages.success(request, "Строка пропущена.")
         return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
 
     def confirm_anomalies_view(self, request, pk):
@@ -177,12 +202,12 @@ class PriceImportAdmin(admin.ModelAdmin):
         if not form.is_valid():
             messages.error(request, "Подтвердите подозрительные изменения.")
         else:
-            rows = price_import.rows.filter(diagnostic_code="large_change")
-            if form.cleaned_data["row_ids"]:
-                rows = rows.filter(pk__in=form.cleaned_data["row_ids"])
-            rows.update(anomaly_confirmed=True)
-            refresh_import_counters(price_import)
-            messages.success(request, "Подозрительные изменения подтверждены.")
+            try:
+                confirm_anomalies(price_import.pk, form.cleaned_data["row_ids"])
+            except PriceImportValidationError as error:
+                messages.error(request, error.message)
+            else:
+                messages.success(request, "Подозрительные изменения подтверждены.")
         return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
 
     def apply_view(self, request, pk):
