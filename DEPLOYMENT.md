@@ -29,3 +29,28 @@ Password reset delivery errors produce the same response as unknown accounts.
 Monitor `app.password_reset` errors in container logs. SMTP error bodies and recipients
 are deliberately omitted. An SMTP outage requires operator attention; no background
 retry queue is introduced by this patch.
+
+## Private error journal
+
+Migration `app.0044_error_journal` adds a metadata-only journal at
+`/admin/app/errorevent/`. Only active superusers can view it or mark entries
+resolved. Staff permissions do not grant access; adding/deleting entries through
+the admin is disabled.
+
+The `got_request_exception` receiver captures new unhandled Django request
+exceptions. It records the URL pattern (not actual parameter values), method,
+exception class and up to 40 file/function/line frames. Exception messages,
+source code, locals, request bodies, headers, query strings and user identities
+are deliberately excluded. A stack identifies where the error occurred but does
+not always explain its full cause without further investigation.
+
+Repeated signatures increment a counter and reopen resolved entries. On each
+successful write entries inactive for 30 days are removed, and the newest 1000
+signatures are retained. This is write-triggered retention, not a scheduled purge.
+Database write failure emits only the exception class to the fallback logger;
+it does not replace the original exception. It cannot record an unavailable
+server or deliberately returned/caught HTTP 500 responses. Keep infrastructure
+monitoring and container logs as a separate source of evidence.
+
+Deploy the migration before restarting web workers. Do not add a public crash
+endpoint for verification. Use automated tests and an isolated internal check.

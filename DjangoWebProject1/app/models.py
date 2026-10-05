@@ -689,6 +689,9 @@ class PromotionAdmin(admin.ModelAdmin):
     list_display = ('title', 'discount', 'is_active', 'order')
     list_editable = ('is_active', 'order')
 
+from .error_models import ErrorEvent  # noqa: F401
+
+
 class PromoCode(models.Model):
     code = models.CharField(max_length=50, unique=True, verbose_name="Код промокода")
     discount_percent = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
