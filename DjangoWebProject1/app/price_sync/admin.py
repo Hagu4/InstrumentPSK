@@ -1,0 +1,210 @@
+from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
+from django.views.decorators.http import require_POST
+
+from app.models import PriceImport, PriceImportRow, Product
+
+from .forms import (
+    ConfirmAnomaliesForm,
+    ManualPriceBatchForm,
+    PriceImportUploadForm,
+    ResolvePriceImportRowForm,
+)
+from .parsing import PriceImportValidationError
+from .services import (
+    create_manual_preview,
+    create_preview,
+    refresh_import_counters,
+    resolve_row,
+    skip_row,
+)
+
+
+@admin.register(PriceImport)
+class PriceImportAdmin(admin.ModelAdmin):
+    change_list_template = "admin/app/priceimport/change_list.html"
+    list_display = (
+        "id",
+        "source_type",
+        "status",
+        "original_name",
+        "total_rows",
+        "matched_rows",
+        "review_rows",
+        "uploaded_by",
+        "created_at",
+        "applied_at",
+    )
+    list_filter = ("source_type", "status", "created_at")
+    search_fields = ("original_name", "file_sha256", "uploaded_by__username")
+    readonly_fields = tuple(field.name for field in PriceImport._meta.fields)
+    actions = None
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_urls(self):
+        custom = [
+            path("upload/", self.admin_site.admin_view(self.upload_view), name="app_priceimport_upload"),
+            path("manual/", self.admin_site.admin_view(self.manual_view), name="app_priceimport_manual"),
+            path("<int:pk>/preview/", self.admin_site.admin_view(self.preview_view), name="app_priceimport_preview"),
+            path("<int:pk>/resolve/<int:row_id>/", self.admin_site.admin_view(require_POST(self.resolve_view)), name="app_priceimport_resolve"),
+            path("<int:pk>/skip/<int:row_id>/", self.admin_site.admin_view(require_POST(self.skip_view)), name="app_priceimport_skip"),
+            path("<int:pk>/confirm-anomalies/", self.admin_site.admin_view(require_POST(self.confirm_anomalies_view)), name="app_priceimport_confirm_anomalies"),
+            path("<int:pk>/apply/", self.admin_site.admin_view(require_POST(self.apply_view)), name="app_priceimport_apply"),
+            path("<int:pk>/rollback/", self.admin_site.admin_view(require_POST(self.rollback_view)), name="app_priceimport_rollback"),
+        ]
+        return custom + super().get_urls()
+
+    def _require(self, request, permission):
+        if not request.user.has_perm(permission):
+            raise PermissionDenied
+
+    def _context(self, request, **extra):
+        return {**self.admin_site.each_context(request), **extra}
+
+    def upload_view(self, request):
+        self._require(request, "app.preview_priceimport")
+        form = PriceImportUploadForm(request.POST or None, request.FILES or None)
+        if request.method == "POST" and form.is_valid():
+            try:
+                price_import, created = create_preview(form.cleaned_data["source_file"], request.user)
+            except PriceImportValidationError as error:
+                form.add_error("source_file", error.message)
+            else:
+                if not created:
+                    messages.info(request, "Этот файл уже загружался — открыта существующая операция.")
+                return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[price_import.pk]))
+        return TemplateResponse(
+            request,
+            "admin/app/priceimport/upload.html",
+            self._context(request, title="Загрузить прайс поставщика", form=form),
+        )
+
+    def manual_view(self, request):
+        self._require(request, "app.create_manual_priceimport")
+        query = request.GET.get("q", "").strip()
+        products = Product.objects.select_related("brand").order_by("title")
+        if query:
+            products = products.filter(
+                Q(title__icontains=query)
+                | Q(sku__icontains=query)
+                | Q(brand__name__icontains=query)
+            )
+        else:
+            products = products.none()
+        form = ManualPriceBatchForm(request.POST or None)
+        if request.method == "POST" and form.is_valid():
+            try:
+                price_import = create_manual_preview(form.cleaned_data["changes"], request.user)
+            except PriceImportValidationError as error:
+                form.add_error(None, error.message)
+            else:
+                return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[price_import.pk]))
+        return TemplateResponse(
+            request,
+            "admin/app/priceimport/manual.html",
+            self._context(
+                request,
+                title="Изменить цены вручную",
+                form=form,
+                products=products[:50],
+                query=query,
+            ),
+        )
+
+    def preview_view(self, request, pk):
+        self._require(request, "app.view_priceimport")
+        price_import = get_object_or_404(PriceImport, pk=pk)
+        rows = price_import.rows.select_related("product", "product__brand")
+        state = request.GET.get("state")
+        if state:
+            rows = rows.filter(status=state)
+        query = request.GET.get("q", "").strip()
+        if query:
+            rows = rows.filter(
+                Q(source_sku__icontains=query)
+                | Q(source_title__icontains=query)
+                | Q(source_brand__icontains=query)
+                | Q(product__title__icontains=query)
+            )
+        page = Paginator(rows, 50).get_page(request.GET.get("page"))
+        latest_success = PriceImport.objects.filter(applied_at__isnull=False).order_by("-applied_at", "-pk").first()
+        return TemplateResponse(
+            request,
+            "admin/app/priceimport/preview.html",
+            self._context(
+                request,
+                title="Предварительный просмотр",
+                price_import=price_import,
+                page=page,
+                latest_success=latest_success,
+                resolve_form=ResolvePriceImportRowForm(),
+            ),
+        )
+
+    def resolve_view(self, request, pk, row_id):
+        self._require(request, "app.resolve_priceimport")
+        row = get_object_or_404(PriceImportRow, pk=row_id, price_import_id=pk)
+        form = ResolvePriceImportRowForm(request.POST)
+        if form.is_valid():
+            resolve_row(row, form.cleaned_data["product"], request.user)
+            messages.success(request, "Соответствие сохранено.")
+        else:
+            messages.error(request, "Выберите существующий товар.")
+        return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
+
+    def skip_view(self, request, pk, row_id):
+        self._require(request, "app.resolve_priceimport")
+        row = get_object_or_404(PriceImportRow, pk=row_id, price_import_id=pk)
+        skip_row(row, request.user)
+        messages.success(request, "Строка пропущена.")
+        return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
+
+    def confirm_anomalies_view(self, request, pk):
+        self._require(request, "app.resolve_priceimport")
+        price_import = get_object_or_404(PriceImport, pk=pk)
+        form = ConfirmAnomaliesForm(request.POST)
+        if not form.is_valid():
+            messages.error(request, "Подтвердите подозрительные изменения.")
+        else:
+            rows = price_import.rows.filter(diagnostic_code="large_change")
+            if form.cleaned_data["row_ids"]:
+                rows = rows.filter(pk__in=form.cleaned_data["row_ids"])
+            rows.update(anomaly_confirmed=True)
+            refresh_import_counters(price_import)
+            messages.success(request, "Подозрительные изменения подтверждены.")
+        return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
+
+    def apply_view(self, request, pk):
+        self._require(request, "app.apply_priceimport")
+        from .services import apply_import
+
+        try:
+            apply_import(pk, request.user)
+        except PriceImportValidationError as error:
+            messages.error(request, error.message)
+        else:
+            messages.success(request, "Цены обновлены.")
+        return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
+
+    def rollback_view(self, request, pk):
+        self._require(request, "app.rollback_priceimport")
+        from .services import rollback_import
+
+        try:
+            rollback_import(pk, request.user)
+        except PriceImportValidationError as error:
+            messages.error(request, error.message)
+        else:
+            messages.success(request, "Последнее обновление цен отменено.")
+        return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))

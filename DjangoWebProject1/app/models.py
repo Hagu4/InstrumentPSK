@@ -503,10 +503,11 @@ class ProductImageInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('sku', 'title', 'brand', 'price', 'quantity', 'added_date', 'category')
+    list_display = ('sku', 'title', 'brand', 'price', 'discount_percent', 'price_updated_at', 'quantity', 'added_date', 'category')
     list_filter = ('added_date', 'category', 'brand')
     search_fields = ('title', 'description', 'sku')
     autocomplete_fields = ['category', 'brand']
+    readonly_fields = ('discount_percent', 'price_updated_at')
     inlines = [ProductCharacteristicInline, ProductImageInline]
 
 @admin.register(Characteristic)

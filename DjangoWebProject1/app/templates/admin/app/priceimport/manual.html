@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'app/css/price_import_admin.css' %}">{% endblock %}
+{% block content %}
+<div class="price-panel">
+  <h1>Изменить цены вручную</h1>
+  <p class="help">Выберите до 100 товаров и введите только новые цены. Скидка и зачёркнутая цена рассчитаются автоматически.</p>
+  <form class="price-search" method="get">
+    <input type="search" name="q" value="{{ query }}" placeholder="Название, артикул или бренд" autofocus>
+    <button type="submit">Найти</button>
+  </form>
+  {% if form.non_field_errors %}<div class="price-errors">{{ form.non_field_errors }}</div>{% endif %}
+  {% if query %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="price-table-wrap">
+      <table class="price-table">
+        <thead><tr><th></th><th>Артикул</th><th>Товар</th><th>Текущая цена</th><th>Новая цена</th></tr></thead>
+        <tbody>
+        {% for product in products %}
+          <tr>
+            <td><input type="checkbox" name="product_id" value="{{ product.pk }}" aria-label="Выбрать {{ product.title }}"></td>
+            <td>{{ product.sku|default:"—" }}</td>
+            <td>{{ product.title }}</td>
+            <td>{{ product.price }} ₽</td>
+            <td><input type="number" name="price_{{ product.pk }}" min="0.01" max="99999999.99" step="0.01" value="{{ product.price }}"></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5">Ничего не найдено.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if products %}<button class="price-button" type="submit">Предварительный просмотр</button>{% endif %}
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

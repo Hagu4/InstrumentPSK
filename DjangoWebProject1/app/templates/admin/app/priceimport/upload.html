@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'app/css/price_import_admin.css' %}">{% endblock %}
+{% block content %}
+<div class="price-panel narrow">
+  <h1>Загрузить прайс поставщика</h1>
+  <p class="help">Используется колонка REKOMEND_CENA. До подтверждения цены товаров не изменятся.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="price-button" type="submit">Создать предварительный просмотр</button>
+    <a class="price-link" href="{% url 'admin:app_priceimport_changelist' %}">Вернуться к истории</a>
+  </form>
+</div>
+{% endblock %}
