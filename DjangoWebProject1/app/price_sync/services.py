@@ -27,6 +27,13 @@ class ManualPriceChange:
     new_price: Decimal
 
 
+@dataclass(frozen=True)
+class CleanupResult:
+    cleaned_imports: int
+    deleted_files: int
+    deleted_rows: int
+
+
 class ImportNotReady(PriceImportValidationError):
     def __init__(self):
         super().__init__("import_not_ready", "Черновик ещё не готов к применению")
@@ -400,7 +407,45 @@ def apply_import(import_id: int, user) -> PriceImport:
     price_import.applied_at = timezone.now()
     price_import.save(update_fields=("status", "applied_by", "applied_at"))
     transaction.on_commit(cache.clear)
+    transaction.on_commit(cleanup_old_price_import_details, robust=True)
     return price_import
+
+
+@transaction.atomic
+def cleanup_old_price_import_details(keep: int = 12) -> CleanupResult:
+    if keep < 0:
+        raise ValueError("keep must be zero or greater")
+
+    successful = PriceImport.objects.filter(
+        source_type=PriceImport.SourceType.SUPPLIER_XLSX,
+        status__in=(PriceImport.Status.APPLIED, PriceImport.Status.ROLLED_BACK),
+        applied_at__isnull=False,
+    ).order_by("-applied_at", "-pk")
+    retained_ids = list(successful.values_list("pk", flat=True)[:keep])
+    old_imports = list(
+        successful.exclude(pk__in=retained_ids).select_for_update()
+    )
+
+    deleted_files = 0
+    deleted_rows = 0
+    cleaned_imports = 0
+    for price_import in old_imports:
+        had_file = bool(price_import.source_file.name)
+        row_count, _ = price_import.rows.all().delete()
+        deleted_rows += row_count
+        if had_file:
+            price_import.source_file.delete(save=False)
+            price_import.source_file = ""
+            price_import.save(update_fields=("source_file",))
+            deleted_files += 1
+        if row_count or had_file:
+            cleaned_imports += 1
+
+    return CleanupResult(
+        cleaned_imports=cleaned_imports,
+        deleted_files=deleted_files,
+        deleted_rows=deleted_rows,
+    )
 
 
 @transaction.atomic
