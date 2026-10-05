@@ -4,6 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -24,6 +25,24 @@ from .pricing import calculate_old_price, choose_discount, is_large_change, vali
 class ManualPriceChange:
     product_id: int
     new_price: Decimal
+
+
+class ImportNotReady(PriceImportValidationError):
+    def __init__(self):
+        super().__init__("import_not_ready", "Черновик ещё не готов к применению")
+
+
+class ImportConflict(PriceImportValidationError):
+    def __init__(self):
+        super().__init__(
+            "import_conflict",
+            "После предпросмотра один из товаров был изменён. Создайте новый предпросмотр.",
+        )
+
+
+class ImportAlreadyApplied(PriceImportValidationError):
+    def __init__(self):
+        super().__init__("import_already_applied", "Эта операция уже применена")
 
 
 def _hash_upload(uploaded_file) -> str:
@@ -283,6 +302,88 @@ def create_manual_preview(changes, user) -> PriceImport:
         )
     PriceImportRow.objects.bulk_create(audit_rows, batch_size=100)
     refresh_import_counters(price_import)
+    return price_import
+
+
+@transaction.atomic
+def apply_import(import_id: int, user) -> PriceImport:
+    price_import = PriceImport.objects.select_for_update().get(pk=import_id)
+    if price_import.status == PriceImport.Status.APPLIED:
+        raise ImportAlreadyApplied()
+    if price_import.status != PriceImport.Status.READY:
+        raise ImportNotReady()
+
+    if price_import.source_type == PriceImport.SourceType.SUPPLIER_XLSX:
+        if not price_import.source_file.name:
+            raise ImportConflict()
+        with price_import.source_file.open("rb") as source_file:
+            if _hash_upload(source_file) != price_import.file_sha256:
+                raise ImportConflict()
+
+    rows = list(
+        price_import.rows.select_for_update()
+        .select_related("product")
+        .filter(status=PriceImportRow.Status.MATCHED)
+    )
+    product_ids = [row.product_id for row in rows]
+    if None in product_ids or len(product_ids) != len(set(product_ids)):
+        raise ImportConflict()
+    products = {
+        product.pk: product
+        for product in Product.objects.select_for_update().filter(pk__in=product_ids)
+    }
+    if len(products) != len(product_ids):
+        raise ImportConflict()
+
+    for row in rows:
+        product = products[row.product_id]
+        current_snapshot = (
+            product.price,
+            product.old_price,
+            product.discount_percent,
+            product.price_updated_at,
+        )
+        expected_snapshot = (
+            row.before_price,
+            row.before_old_price,
+            row.before_discount_percent,
+            row.before_price_updated_at,
+        )
+        if current_snapshot != expected_snapshot:
+            raise ImportConflict()
+        product.price = row.after_price
+        product.old_price = row.after_old_price
+        product.discount_percent = row.after_discount_percent
+        product.price_updated_at = row.after_price_updated_at
+
+    Product.objects.bulk_update(
+        list(products.values()),
+        fields=("price", "old_price", "discount_percent", "price_updated_at"),
+        batch_size=1000,
+    )
+
+    if price_import.source_type == PriceImport.SourceType.SUPPLIER_XLSX:
+        for row in rows:
+            SupplierProductLink.objects.update_or_create(
+                supplier=price_import.supplier,
+                product_id=row.product_id,
+                defaults={
+                    "source_sku": row.source_sku,
+                    "normalized_brand": normalize_brand(row.source_brand),
+                    "normalized_title": normalize_text(row.source_title),
+                    "numeric_signature": list(
+                        extract_numeric_signature(row.source_title)
+                    ),
+                    "confirmed_by": row.resolved_by,
+                    "confirmed_at": row.resolved_at,
+                },
+            )
+
+    price_import.status = PriceImport.Status.APPLIED
+    price_import.applied_by = user
+    price_import.applied_at = timezone.now()
+    price_import.save(update_fields=("status", "applied_by", "applied_at"))
+    transaction.on_commit(cache.clear)
     return price_import
 
 
