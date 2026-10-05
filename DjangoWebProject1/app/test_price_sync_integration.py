@@ -63,7 +63,12 @@ class PriceSyncIntegrationTests(TransactionTestCase):
         workbook = make_workbook(
             [
                 ("WORTEX", "Дрель WORTEX 18 В", "EXACT-1", 125),
-                ("WORTEX", "Неизвестная позиция 999", "SUPPLIER-2", 400),
+                (
+                    "WORTEX",
+                    "Шуруповерт WORTEX аккумуляторный 20В",
+                    "SUPPLIER-2",
+                    400,
+                ),
             ]
         )
 
@@ -146,3 +151,52 @@ class PriceSyncIntegrationTests(TransactionTestCase):
         self.assertEqual(price_import.total_rows, 27_340)
         self.assertEqual(price_import.rows.count(), 27_340)
         self.assertLess(len(queries), 700)
+
+    def test_supplier_rows_without_catalog_candidates_are_skipped_automatically(self):
+        workbook = make_workbook(
+            [("_", "Смеситель для ванны вентильный, серия 08", "NNF-0015", 2790)]
+        )
+
+        price_import, created = create_preview(workbook, self.admin)
+
+        self.assertTrue(created)
+        row = price_import.rows.get()
+        self.assertEqual(row.status, PriceImportRow.Status.SKIPPED)
+        self.assertEqual(row.diagnostic_code, "not_in_catalog")
+        self.assertEqual(price_import.review_rows, 0)
+
+    def test_preview_matches_only_the_two_catalog_products_from_sample_price(self):
+        diamond = Product.objects.create(
+            title="Алмазный круг 230x22мм керамика 35 (Сплитстоун)",
+            price=Decimal("2000.00"),
+            quantity=10,
+        )
+        faucet = Product.objects.create(
+            title="Смеситель для ванны вентильный, серия 07",
+            sku="NNF-0016",
+            price=Decimal("1500.00"),
+            quantity=10,
+        )
+        workbook = make_workbook(
+            [
+                ("Нет бренда", diamond.title, None, 6840),
+                ("_", faucet.title, "NNF-0016", 2330),
+                ("_", "Смеситель для ванны вентильный, серия 08", "NNF-0015", 2790),
+                ("_", "Смеситель для кухни D35, серия 02", "NNF-0051", 1110),
+                ("_", "Смеситель для умывальника D35, серия 01", "NNF-0004", 1800),
+            ]
+        )
+
+        price_import, created = create_preview(workbook, self.admin)
+
+        self.assertTrue(created)
+        self.assertEqual(price_import.total_rows, 5)
+        self.assertEqual(price_import.matched_rows, 2)
+        self.assertEqual(price_import.skipped_rows, 3)
+        self.assertEqual(price_import.review_rows, 0)
+        diamond_row = price_import.rows.get(product=diamond)
+        faucet_row = price_import.rows.get(product=faucet)
+        self.assertEqual(diamond_row.before_price, Decimal("2000.00"))
+        self.assertEqual(diamond_row.after_price, Decimal("6840.00"))
+        self.assertEqual(faucet_row.before_price, Decimal("1500.00"))
+        self.assertEqual(faucet_row.after_price, Decimal("2330.00"))

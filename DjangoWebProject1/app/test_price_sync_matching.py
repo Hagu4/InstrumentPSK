@@ -69,6 +69,22 @@ class PriceSyncMatchingTests(TestCase):
 
         self.assertEqual((decision.product_id, decision.method), (product.pk, "exact_title"))
 
+    def test_no_brand_placeholder_matches_product_without_brand_by_exact_title(self):
+        product = Product.objects.create(
+            title="Алмазный круг 230x22мм керамика 35 (Сплитстоун)",
+            price=Decimal("100.00"),
+        )
+
+        decision = match_row(
+            self.supplier_row(
+                title="Алмазный круг 230x22мм керамика 35 (Сплитстоун)",
+                brand="Нет бренда",
+            ),
+            self.index(),
+        )
+
+        self.assertEqual((decision.product_id, decision.method), (product.pk, "exact_title"))
+
     def test_same_brand_but_conflicting_numbers_is_not_automatic(self):
         self.make_product(title="Дрель 12 В 2 Ач")
 
@@ -90,6 +106,25 @@ class PriceSyncMatchingTests(TestCase):
 
         self.assertIsNone(decision.product_id)
         self.assertIn(product.pk, decision.candidate_ids)
+
+    def test_fuzzy_candidates_do_not_cross_conflicting_model_numbers(self):
+        product = Product.objects.create(
+            title="Смеситель для ванны вентильный, серия 07",
+            sku="NNF-0016",
+            price=Decimal("100.00"),
+        )
+
+        decision = match_row(
+            self.supplier_row(
+                title="Смеситель для ванны вентильный, серия 08",
+                sku="NNF-0015",
+                brand="_",
+            ),
+            self.index(),
+        )
+
+        self.assertIsNone(decision.product_id)
+        self.assertNotIn(product.pk, decision.candidate_ids)
 
     def test_product_already_claimed_in_import_requires_review(self):
         product = self.make_product(sku="ABC-123")

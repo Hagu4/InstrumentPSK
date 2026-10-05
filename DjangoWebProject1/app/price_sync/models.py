@@ -49,21 +49,36 @@ class PriceImport(models.Model):
         ROLLED_BACK = "rolled_back", "Отменён"
         FAILED = "failed", "Ошибка"
 
-    source_type = models.CharField(max_length=16, choices=SourceType.choices)
+    source_type = models.CharField(
+        max_length=16, choices=SourceType.choices, verbose_name="Тип источника"
+    )
     source_file = models.FileField(
         storage=private_price_import_storage,
         upload_to=price_import_upload_to,
         blank=True,
+        verbose_name="Файл прайса",
     )
-    original_name = models.CharField(max_length=255, blank=True)
-    file_sha256 = models.CharField(max_length=64, unique=True, null=True, blank=True)
-    supplier = models.CharField(max_length=32, default="stiooo")
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    original_name = models.CharField(max_length=255, blank=True, verbose_name="Имя файла")
+    file_sha256 = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name="SHA-256 файла",
+    )
+    supplier = models.CharField(max_length=32, default="stiooo", verbose_name="Поставщик")
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        verbose_name="Состояние",
+    )
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
         on_delete=models.SET_NULL,
         related_name="uploaded_price_imports",
+        verbose_name="Загрузил",
     )
     applied_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -71,6 +86,7 @@ class PriceImport(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="applied_price_imports",
+        verbose_name="Применил",
     )
     rolled_back_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -78,19 +94,20 @@ class PriceImport(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="rolled_back_price_imports",
+        verbose_name="Отменил",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    applied_at = models.DateTimeField(null=True, blank=True)
-    rolled_back_at = models.DateTimeField(null=True, blank=True)
-    total_rows = models.PositiveIntegerField(default=0)
-    matched_rows = models.PositiveIntegerField(default=0)
-    skipped_rows = models.PositiveIntegerField(default=0)
-    review_rows = models.PositiveIntegerField(default=0)
-    changed_rows = models.PositiveIntegerField(default=0)
-    increased_rows = models.PositiveIntegerField(default=0)
-    decreased_rows = models.PositiveIntegerField(default=0)
-    anomaly_rows = models.PositiveIntegerField(default=0)
-    failure_code = models.CharField(max_length=64, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    applied_at = models.DateTimeField(null=True, blank=True, verbose_name="Дата применения")
+    rolled_back_at = models.DateTimeField(null=True, blank=True, verbose_name="Дата отмены")
+    total_rows = models.PositiveIntegerField(default=0, verbose_name="Всего строк")
+    matched_rows = models.PositiveIntegerField(default=0, verbose_name="Сопоставлено")
+    skipped_rows = models.PositiveIntegerField(default=0, verbose_name="Пропущено")
+    review_rows = models.PositiveIntegerField(default=0, verbose_name="Требуют проверки")
+    changed_rows = models.PositiveIntegerField(default=0, verbose_name="Изменится")
+    increased_rows = models.PositiveIntegerField(default=0, verbose_name="Подорожает")
+    decreased_rows = models.PositiveIntegerField(default=0, verbose_name="Подешевеет")
+    anomaly_rows = models.PositiveIntegerField(default=0, verbose_name="Изменение более 50%")
+    failure_code = models.CharField(max_length=64, blank=True, verbose_name="Код ошибки")
 
     class Meta:
         ordering = ("-created_at", "-pk")

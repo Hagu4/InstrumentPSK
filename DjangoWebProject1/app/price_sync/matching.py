@@ -139,6 +139,8 @@ def match_row(row, index: CatalogIndex, claimed_product_ids=None) -> MatchDecisi
             continue
         if numeric_signature and entry.numeric_signature != numeric_signature:
             continue
+        if not numeric_signature and model_tokens and entry.model_tokens != model_tokens:
+            continue
         ratio = SequenceMatcher(None, title, entry.title).ratio()
         if ratio >= 0.45:
             ranked.append((ratio, entry.product_id))

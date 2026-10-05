@@ -37,6 +37,51 @@ class PriceSyncAdminTests(TestCase):
             "fas fa-ruble-sign",
         )
 
+    def test_price_import_history_uses_russian_column_and_filter_labels(self):
+        PriceImport.objects.create(
+            source_type=PriceImport.SourceType.SUPPLIER_XLSX,
+            original_name="prices.xlsx",
+            uploaded_by=self.superuser,
+        )
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(self.history_url)
+
+        for label in (
+            "Тип источника",
+            "Состояние",
+            "Имя файла",
+            "Всего строк",
+            "Сопоставлено",
+            "Требуют проверки",
+            "Загрузил",
+            "Дата создания",
+            "Дата применения",
+        ):
+            self.assertContains(response, label)
+
+    def test_preview_hides_automatically_skipped_supplier_rows_by_default(self):
+        price_import = PriceImport.objects.create(
+            source_type=PriceImport.SourceType.SUPPLIER_XLSX,
+            uploaded_by=self.superuser,
+        )
+        PriceImportRow.objects.create(
+            price_import=price_import,
+            row_number=2,
+            source_title="Отсутствующий в каталоге товар",
+            source_price=Decimal("120.00"),
+            status=PriceImportRow.Status.SKIPPED,
+            diagnostic_code="not_in_catalog",
+        )
+        self.client.force_login(self.superuser)
+        preview_url = reverse("admin:app_priceimport_preview", args=[price_import.pk])
+
+        response = self.client.get(preview_url)
+        skipped_response = self.client.get(preview_url, {"state": "skipped"})
+
+        self.assertNotContains(response, "Отсутствующий в каталоге товар")
+        self.assertContains(skipped_response, "Отсутствующий в каталоге товар")
+
     def test_public_and_staff_without_permission_cannot_view_imports(self):
         self.assertEqual(self.client.get(self.history_url).status_code, 302)
         self.client.force_login(self.staff_without_permissions)

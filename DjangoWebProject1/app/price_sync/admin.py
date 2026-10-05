@@ -129,6 +129,8 @@ class PriceImportAdmin(admin.ModelAdmin):
         state = request.GET.get("state")
         if state:
             rows = rows.filter(status=state)
+        else:
+            rows = rows.exclude(status=PriceImportRow.Status.SKIPPED)
         query = request.GET.get("q", "").strip()
         if query:
             rows = rows.filter(

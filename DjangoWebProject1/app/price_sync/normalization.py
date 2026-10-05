@@ -37,7 +37,10 @@ def normalize_text(value: object) -> str:
 
 
 def normalize_brand(value: object) -> str:
-    return normalize_text(value)[:200]
+    brand = normalize_text(value)[:200]
+    if brand in {"", "нет бренда", "без бренда", "no brand", "none", "n a"}:
+        return ""
+    return brand
 
 
 def normalize_sku(value: object) -> str:

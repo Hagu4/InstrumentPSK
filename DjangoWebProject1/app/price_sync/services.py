@@ -145,7 +145,14 @@ def refresh_import_counters(price_import: PriceImport) -> None:
 
 def create_preview(uploaded_file, user) -> tuple[PriceImport, bool]:
     file_sha256 = _hash_upload(uploaded_file)
-    existing = PriceImport.objects.filter(file_sha256=file_sha256).first()
+    existing = PriceImport.objects.filter(
+        file_sha256=file_sha256,
+        status__in=(
+            PriceImport.Status.READY,
+            PriceImport.Status.APPLIED,
+            PriceImport.Status.ROLLED_BACK,
+        ),
+    ).first()
     if existing is not None:
         return existing, False
 
@@ -192,6 +199,7 @@ def create_preview(uploaded_file, user) -> tuple[PriceImport, bool]:
         decision = match_row(source_row, index, claimed_product_ids)
         product = products_by_id.get(decision.product_id)
         if product is None:
+            has_candidates = bool(decision.candidate_ids)
             audit_rows.append(
                 PriceImportRow(
                     price_import=price_import,
@@ -202,8 +210,14 @@ def create_preview(uploaded_file, user) -> tuple[PriceImport, bool]:
                     source_price=source_row.recommended_price,
                     candidate_product_ids=list(decision.candidate_ids),
                     match_method=decision.method,
-                    status=PriceImportRow.Status.NEEDS_REVIEW,
-                    diagnostic_code=decision.diagnostic_code,
+                    status=(
+                        PriceImportRow.Status.NEEDS_REVIEW
+                        if has_candidates
+                        else PriceImportRow.Status.SKIPPED
+                    ),
+                    diagnostic_code=(
+                        decision.diagnostic_code if has_candidates else "not_in_catalog"
+                    ),
                 )
             )
             continue

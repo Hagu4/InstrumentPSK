@@ -7,7 +7,7 @@ from django.test import TestCase
 from openpyxl import Workbook
 
 from app.models import Brand, PriceImportRow, Product
-from app.price_sync.services import create_preview, skip_row
+from app.price_sync.services import create_preview
 
 
 def price_workbook(rows, filename="prices.xlsx"):
@@ -72,6 +72,21 @@ class PriceSyncPreviewTests(TestCase):
         self.assertFalse(created_second)
         self.assertEqual(first.pk, second.pk)
 
+    def test_same_sha_can_be_reprocessed_when_previous_preview_is_still_draft(self):
+        workbook = self.upload(price=200)
+        payload = workbook.read()
+        first, created_first = create_preview(
+            SimpleUploadedFile("one.xlsx", payload), self.user
+        )
+        second, created_second = create_preview(
+            SimpleUploadedFile("two.xlsx", payload), self.user
+        )
+
+        self.assertTrue(created_first)
+        self.assertEqual(first.status, first.Status.DRAFT)
+        self.assertTrue(created_second)
+        self.assertNotEqual(first.pk, second.pk)
+
     def test_preview_never_creates_or_deletes_products(self):
         before_ids = set(Product.objects.values_list("pk", flat=True))
 
@@ -79,18 +94,14 @@ class PriceSyncPreviewTests(TestCase):
 
         self.assertSetEqual(before_ids, set(Product.objects.values_list("pk", flat=True)))
 
-    def test_unmatched_row_requires_explicit_skip(self):
+    def test_unmatched_row_without_candidates_is_skipped_automatically(self):
         import_obj, _ = create_preview(
             self.upload(sku="UNKNOWN", title="Совсем другой товар"),
             self.user,
         )
         row = import_obj.rows.get()
-        self.assertEqual(row.status, PriceImportRow.Status.NEEDS_REVIEW)
-        self.assertEqual(import_obj.status, import_obj.Status.DRAFT)
-
-        skip_row(row, self.user)
-
-        import_obj.refresh_from_db()
+        self.assertEqual(row.status, PriceImportRow.Status.SKIPPED)
+        self.assertEqual(row.diagnostic_code, "not_in_catalog")
         self.assertEqual(import_obj.status, import_obj.Status.READY)
 
     def test_change_over_fifty_percent_blocks_ready_state(self):
