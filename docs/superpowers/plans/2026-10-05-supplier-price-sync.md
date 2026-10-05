@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Добавить в закрытую админку безопасную загрузку прайс-листа `old.stiooo.ru`, предварительную проверку сопоставлений и цен, атомарное применение, историю и откат последнего обновления без создания или удаления товаров.
+**Goal:** Добавить в закрытую админку безопасную загрузку прайс-листа `old.stiooo.ru` и ручное пакетное изменение цен с предварительной проверкой, атомарным применением, общей историей и откатом без создания или удаления товаров.
 
-**Architecture:** Функция живёт в изолированном пакете `app.price_sync`: чистые функции разбирают XLSX, нормализуют данные и рассчитывают цены; сервисы создают неизменяемый черновик, применяют его и откатывают в транзакциях; Django Admin даёт загрузку, ручное разрешение неоднозначностей и аудит. Исходные файлы хранятся в отдельном непубличном volume, а подробные данные сохраняются только для 12 последних успешных импортов.
+**Architecture:** Функция живёт в изолированном пакете `app.price_sync`: чистые функции разбирают XLSX, нормализуют данные и рассчитывают цены; supplier- и manual-сервисы создают одинаковые неизменяемые черновики, которые общий сервис применяет и откатывает в транзакциях; Django Admin даёт загрузку, поиск товаров, ручное разрешение неоднозначностей и аудит. Исходные файлы хранятся в отдельном непубличном volume, а подробные данные сохраняются только для 12 последних успешных Excel-импортов; компактные ручные операции сохраняются полностью.
 
 **Tech Stack:** Python 3.12, Django 4.2.13, PostgreSQL 15, `openpyxl==3.1.5`, Django Admin/Jazzmin, Docker Compose, `unittest`/Django `TestCase`.
 
@@ -26,6 +26,8 @@
 - Исходный XLSX и строки аудита хранятся для 12 последних успешных импортов; публичного URL у файла нет.
 - Все изменяющие admin endpoints принимают только POST, проверяют CSRF и отдельные model permissions.
 - Полный supplier-файл не коммитится; тесты создают небольшие XLSX in-memory.
+- Ручная операция содержит от одного до 100 уникальных существующих товаров; сотрудник вводит только новую `price`, а скидка и `old_price` рассчитываются общими функциями.
+- Excel- и ручные операции участвуют в одной хронологии применения и отката.
 
 ---
 
@@ -41,7 +43,7 @@
 - `DjangoWebProject1/app/price_sync/normalization.py` — нормализация SKU, бренда, названия, модели и чисел.
 - `DjangoWebProject1/app/price_sync/pricing.py` — постоянная скидка, старая цена, проверка отклонения.
 - `DjangoWebProject1/app/price_sync/matching.py` — индекс каталога и детерминированный подбор товара.
-- `DjangoWebProject1/app/price_sync/services.py` — создание предпросмотра, ручное решение, применение, откат и очистка.
+- `DjangoWebProject1/app/price_sync/services.py` — supplier/manual предпросмотр, ручное решение сопоставлений, применение, откат и очистка.
 - `DjangoWebProject1/app/price_sync/forms.py` — upload/resolve/confirm формы.
 - `DjangoWebProject1/app/price_sync/admin.py` — ModelAdmin, permissions и POST actions.
 - `DjangoWebProject1/app/admin.py` — импорт регистраций price-sync и журнала сбоев.
@@ -213,10 +215,16 @@ class PriceImport(models.Model):
         ROLLED_BACK = "rolled_back", "Отменён"
         FAILED = "failed", "Ошибка"
 
+    class SourceType(models.TextChoices):
+        SUPPLIER_XLSX = "supplier_xlsx", "Прайс поставщика"
+        MANUAL = "manual", "Ручное изменение"
+
+    source_type = models.CharField(max_length=16, choices=SourceType.choices)
     source_file = models.FileField(storage=private_price_import_storage,
-                                   upload_to=price_import_upload_to)
-    original_name = models.CharField(max_length=255)
-    file_sha256 = models.CharField(max_length=64, unique=True)
+                                   upload_to=price_import_upload_to,
+                                   blank=True)
+    original_name = models.CharField(max_length=255, blank=True)
+    file_sha256 = models.CharField(max_length=64, unique=True, null=True, blank=True)
     supplier = models.CharField(max_length=32, default="stiooo")
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
@@ -244,6 +252,7 @@ class PriceImport(models.Model):
     class Meta:
         permissions = [
             ("preview_priceimport", "Can create price import previews"),
+            ("create_manual_priceimport", "Can create manual price batches"),
             ("resolve_priceimport", "Can resolve price import rows"),
             ("apply_priceimport", "Can apply price imports"),
             ("rollback_priceimport", "Can rollback price imports"),
@@ -687,7 +696,70 @@ git add DjangoWebProject1/app/price_sync/services.py DjangoWebProject1/app/test_
 git commit -m "feat: build auditable price import previews"
 ```
 
-### Task 7: Add the admin-only workflow and latest-update visibility
+### Task 7: Create manual multi-product price previews
+
+**Files:**
+- Modify: `DjangoWebProject1/app/price_sync/services.py`
+- Create: `DjangoWebProject1/app/test_price_sync_manual.py`
+
+**Interfaces:**
+- Produces: `ManualPriceChange(product_id: int, new_price: Decimal)` and `create_manual_preview(changes, user) -> PriceImport`.
+
+- [ ] **Step 1: Write manual-preview tests**
+
+```python
+class ManualPricePreviewTests(TestCase):
+    def test_manual_preview_accepts_several_unique_existing_products(self):
+        first = make_product(price=Decimal("100"), discount_percent=17)
+        second = make_product(price=Decimal("200"), discount_percent=23)
+        import_obj = create_manual_preview([
+            ManualPriceChange(first.pk, Decimal("110")),
+            ManualPriceChange(second.pk, Decimal("180")),
+        ], self.user)
+        self.assertEqual(import_obj.source_type, PriceImport.SourceType.MANUAL)
+        self.assertEqual(import_obj.rows.count(), 2)
+        self.assertEqual(import_obj.rows.get(product=first).after_discount_percent, 17)
+        first.refresh_from_db()
+        self.assertEqual(first.price, Decimal("100"))
+
+    def test_manual_preview_rejects_duplicate_product(self):
+        product = make_product()
+        with self.assertRaisesRegex(PriceImportValidationError, "duplicate_manual_product"):
+            create_manual_preview([
+                ManualPriceChange(product.pk, Decimal("100")),
+                ManualPriceChange(product.pk, Decimal("110")),
+            ], self.user)
+
+    def test_manual_preview_rejects_missing_invalid_or_more_than_one_hundred_rows(self):
+        with self.assertRaises(PriceImportValidationError):
+            create_manual_preview([], self.user)
+        with self.assertRaises(PriceImportValidationError):
+            create_manual_preview([ManualPriceChange(999999, Decimal("100"))], self.user)
+        with self.assertRaises(PriceImportValidationError):
+            create_manual_preview([ManualPriceChange(self.product.pk, Decimal("0"))], self.user)
+```
+
+Also assert that a >50% change remains unready until anomaly confirmation and that no source file/hash is stored.
+
+- [ ] **Step 2: Run and confirm manual-preview tests fail**
+
+```powershell
+python DjangoWebProject1/manage.py test app.test_price_sync_manual --noinput
+```
+
+- [ ] **Step 3: Implement the manual preview through the common audit model**
+
+Validate 1–100 changes, unique IDs, existing products and positive database-safe Decimal prices. Load all selected products in one query, calculate stable discount and `old_price` with Task 3 functions, and bulk-create matched `PriceImportRow` records with `match_method="manual_price"`. Set `source_type="manual"`, leave file/hash/name empty, calculate counters, and set status `ready` only when all anomalies are confirmed. Do not save any Product here.
+
+- [ ] **Step 4: Run tests and commit**
+
+```powershell
+python DjangoWebProject1/manage.py test app.test_price_sync_manual --noinput
+git add DjangoWebProject1/app/price_sync/services.py DjangoWebProject1/app/test_price_sync_manual.py
+git commit -m "feat: add manual batch price previews"
+```
+
+### Task 8: Add the admin-only workflow and latest-update visibility
 
 **Files:**
 - Create: `DjangoWebProject1/app/admin.py` if not already merged from the journal branch
@@ -695,6 +767,7 @@ git commit -m "feat: build auditable price import previews"
 - Create: `DjangoWebProject1/app/price_sync/admin.py`
 - Create: `DjangoWebProject1/app/templates/admin/app/priceimport/change_list.html`
 - Create: `DjangoWebProject1/app/templates/admin/app/priceimport/upload.html`
+- Create: `DjangoWebProject1/app/templates/admin/app/priceimport/manual.html`
 - Create: `DjangoWebProject1/app/templates/admin/app/priceimport/preview.html`
 - Create: `DjangoWebProject1/app/templates/admin/app/priceimport/confirm_apply.html`
 - Create: `DjangoWebProject1/app/static/app/css/price_import_admin.css`
@@ -703,7 +776,7 @@ git commit -m "feat: build auditable price import previews"
 
 **Interfaces:**
 - Consumes: Task 6 services and Django model permissions.
-- Produces: named admin routes `admin:app_priceimport_upload`, `admin:app_priceimport_preview`, `admin:app_priceimport_resolve`, `admin:app_priceimport_skip`, `admin:app_priceimport_confirm_anomalies`, `admin:app_priceimport_apply`, `admin:app_priceimport_rollback`.
+- Produces: named admin routes `admin:app_priceimport_upload`, `admin:app_priceimport_manual`, `admin:app_priceimport_preview`, `admin:app_priceimport_resolve`, `admin:app_priceimport_skip`, `admin:app_priceimport_confirm_anomalies`, `admin:app_priceimport_apply`, `admin:app_priceimport_rollback`.
 
 - [ ] **Step 1: Write access and workflow tests**
 
@@ -724,6 +797,17 @@ class PriceSyncAdminTests(TestCase):
         response = self.client.post(self.upload_url, {"source_file": upload("prices.csv", b"x")})
         self.assertContains(response, "Только файлы XLSX", status_code=200)
 
+    def test_manual_page_searches_products_and_creates_preview(self):
+        self.client.force_login(self.authorized_user)
+        response = self.client.get(self.manual_url, {"q": self.product.sku})
+        self.assertContains(response, self.product.title)
+        response = self.client.post(self.manual_url, {
+            "product_id": [self.product.pk], "new_price": ["1250.00"]
+        }, follow=True)
+        self.assertContains(response, "Предварительный просмотр")
+        self.product.refresh_from_db()
+        self.assertNotEqual(self.product.price, Decimal("1250.00"))
+
     def test_price_timestamp_is_present_in_admin_but_absent_from_public_pages(self):
         self.client.force_login(self.superuser)
         self.assertContains(self.client.get(reverse("admin:app_product_changelist")), "Цена обновлена")
@@ -739,7 +823,7 @@ python DjangoWebProject1/manage.py test app.test_price_sync_admin --noinput
 
 - [ ] **Step 3: Implement forms with exact validation**
 
-`PriceImportUploadForm` accepts one `source_file`, checks `.xlsx` and `PRICE_IMPORT_MAX_BYTES`. `ResolvePriceImportRowForm` exposes the `product` relation with Django's `AutocompleteSelect`. `ConfirmAnomaliesForm` requires a boolean confirmation and hidden filtered row IDs. None of these forms expose source paths.
+`PriceImportUploadForm` accepts one `source_file`, checks `.xlsx` and `PRICE_IMPORT_MAX_BYTES`. `ManualPriceBatchForm` accepts paired `product_id` and `new_price` lists, validates 1–100 unique products and passes `ManualPriceChange` values to the service. `ResolvePriceImportRowForm` exposes the `product` relation with Django's `AutocompleteSelect`. `ConfirmAnomaliesForm` requires a boolean confirmation and hidden filtered row IDs. None of these forms expose source paths.
 
 - [ ] **Step 4: Register admin URLs and enforce permission per action**
 
@@ -747,6 +831,7 @@ python DjangoWebProject1/manage.py test app.test_price_sync_admin --noinput
 def get_urls(self):
     custom = [
         path("upload/", self.admin_site.admin_view(self.upload_view), name="app_priceimport_upload"),
+        path("manual/", self.admin_site.admin_view(self.manual_view), name="app_priceimport_manual"),
         path("<int:pk>/preview/", self.admin_site.admin_view(self.preview_view), name="app_priceimport_preview"),
         path("<int:pk>/apply/", self.admin_site.admin_view(require_POST(self.apply_view)), name="app_priceimport_apply"),
         path("<int:pk>/rollback/", self.admin_site.admin_view(require_POST(self.rollback_view)), name="app_priceimport_rollback"),
@@ -758,7 +843,7 @@ Add resolve, skip, and anomaly-confirm routes in the same form. Each view calls 
 
 - [ ] **Step 5: Build the preview screen**
 
-Show summary cards, the latest successful `applied_at`, filters for matched/review/skipped/anomaly, search over SKU/title/brand, and a paginated table with before/after values. The apply button is disabled until status is `ready`; anomaly confirmation and manual selection use POST forms with CSRF tokens. Escape all supplier strings through normal Django template rendering.
+Show two primary actions, «Загрузить прайс поставщика» and «Изменить цены вручную». The manual page searches existing products by SKU/title/brand, lets the manager add rows and enter only `new_price`, and submits one batch. The shared preview shows summary cards, the latest successful `applied_at`, filters for matched/review/skipped/anomaly, and a paginated table with before/after values. The apply button is disabled until status is `ready`; anomaly confirmation and manual selection use POST forms with CSRF tokens. Escape all supplier strings through normal Django template rendering.
 
 - [ ] **Step 6: Expose timestamps only in admin**
 
@@ -772,7 +857,7 @@ git add DjangoWebProject1/app/admin.py DjangoWebProject1/app/models.py DjangoWeb
 git commit -m "feat: add admin price import review workflow"
 ```
 
-### Task 8: Apply an approved import atomically
+### Task 9: Apply an approved import atomically
 
 **Files:**
 - Modify: `DjangoWebProject1/app/price_sync/services.py`
@@ -861,7 +946,7 @@ git add DjangoWebProject1/app/price_sync/services.py DjangoWebProject1/app/price
 git commit -m "feat: apply approved price imports atomically"
 ```
 
-### Task 9: Roll back only the latest safe import
+### Task 10: Roll back only the latest safe import
 
 **Files:**
 - Modify: `DjangoWebProject1/app/price_sync/services.py`
@@ -911,7 +996,7 @@ git add DjangoWebProject1/app/price_sync/services.py DjangoWebProject1/app/price
 git commit -m "feat: safely rollback the latest price import"
 ```
 
-### Task 10: Retain only twelve detailed successful imports
+### Task 11: Retain only twelve detailed successful imports
 
 **Files:**
 - Create: `DjangoWebProject1/app/management/commands/cleanup_price_imports.py`
@@ -951,7 +1036,7 @@ python DjangoWebProject1/manage.py test app.test_price_sync_retention --noinput
 
 - [ ] **Step 3: Implement cleanup after commit and as a command**
 
-Keep summary counters and timestamps forever. Consider both `applied` and `rolled_back` records successful and order them by `applied_at`/PK. For successful imports older than the newest twelve, delete `PriceImportRow` records and call `source_file.delete(save=False)` followed by clearing the field. Never delete `Product`, `SupplierProductLink`, or the `PriceImport` summary. Invoke cleanup through `transaction.on_commit()` after apply, and expose the command for daily maintenance.
+Keep summary counters and timestamps forever. Consider both `applied` and `rolled_back` Excel records successful and order them by `applied_at`/PK. For `source_type="supplier_xlsx"` imports older than the newest twelve, delete `PriceImportRow` records and call `source_file.delete(save=False)` followed by clearing the field. Keep manual rows indefinitely because they are small and provide the complete manual audit. Never delete `Product`, `SupplierProductLink`, or the `PriceImport` summary. Invoke cleanup through `transaction.on_commit()` after apply, and expose the command for daily maintenance.
 
 - [ ] **Step 4: Run tests and commit**
 
@@ -961,7 +1046,7 @@ git add DjangoWebProject1/app/management/commands/cleanup_price_imports.py Djang
 git commit -m "feat: retain twelve detailed price imports"
 ```
 
-### Task 11: Add end-to-end safety, query and performance regression tests
+### Task 12: Add end-to-end safety, query and performance regression tests
 
 **Files:**
 - Create: `DjangoWebProject1/app/test_price_sync_integration.py`
@@ -1015,7 +1100,7 @@ git add DjangoWebProject1/app/test_price_sync_integration.py
 git commit -m "test: cover price import lifecycle"
 ```
 
-### Task 12: Document, stage and deploy without risking the catalog
+### Task 13: Document, stage and deploy without risking the catalog
 
 **Files:**
 - Create: `docs/price-import-runbook.md`
@@ -1068,12 +1153,14 @@ Push `feature/supplier-price-sync`, require the CI check, review migrations and 
 ## Definition of done
 
 - The real supplier workbook can be uploaded only by an authorized staff user and produces a reviewable preview.
+- An authorized staff user can search for up to 100 products, enter new prices, and create a manual preview without editing products one by one.
 - Automatic matches follow the approved strict order; doubtful matches require a human.
 - Prices use `REKOMEND_CENA`; every product keeps one 10–30% discount and an old price rounded upward to 10 rubles.
 - Preview changes no products; apply changes only the four approved Product fields in one transaction.
 - Product count and IDs remain unchanged across preview, apply and rollback.
 - The last update time is visible in admin only.
 - The latest safe import can be rolled back; stale/manual changes are reported as conflicts.
+- Excel and manual applications share one chronological rollback boundary.
 - Duplicate application, malformed XLSX, oversized XLSX, zip expansion, formula cells, invalid prices and unauthorized requests are covered by tests.
 - Twelve newest successful imports keep full details; older ones retain summaries only.
 - Production deployment is traceable to a clean reviewed commit and begins with a PostgreSQL backup.
