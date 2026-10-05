@@ -64,20 +64,76 @@ class PriceSyncAdminTests(TestCase):
 
         self.assertContains(response, "Только файлы XLSX", status_code=200)
 
-    def test_manual_page_searches_products_and_creates_preview(self):
+    def test_manual_page_lists_products_without_requiring_search_or_checkboxes(self):
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(self.manual_url)
+
+        self.assertContains(response, self.product.title)
+        self.assertContains(response, f'name="price_{self.product.pk}"')
+        self.assertNotContains(response, 'type="checkbox"')
+        self.assertContains(response, "Сохранить изменения")
+
+    def test_manual_page_searches_products_and_creates_preview_only_for_changed_prices(self):
+        unchanged = Product.objects.create(
+            title="Товар с неизменной ценой",
+            sku="ADMIN-PRICE-2",
+            price=Decimal("700.00"),
+        )
         self.client.force_login(self.superuser)
         response = self.client.get(self.manual_url, {"q": self.product.sku})
         self.assertContains(response, self.product.title)
 
         response = self.client.post(
             self.manual_url,
-            {"product_id": [str(self.product.pk)], "new_price": ["1250.00"]},
+            {
+                "product_id": [str(self.product.pk), str(unchanged.pk)],
+                f"price_{self.product.pk}": "1250.00",
+                f"price_{unchanged.pk}": "700.00",
+            },
             follow=True,
         )
 
         self.assertContains(response, "Предварительный просмотр")
+        price_import = PriceImport.objects.latest("pk")
+        self.assertEqual(price_import.rows.count(), 1)
+        self.assertEqual(price_import.rows.get().product, self.product)
         self.product.refresh_from_db()
         self.assertEqual(self.product.price, Decimal("1000.00"))
+
+    def test_manual_page_rejects_submission_when_no_price_changed(self):
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(
+            self.manual_url,
+            {
+                "product_id": [str(self.product.pk)],
+                f"price_{self.product.pk}": "1000.00",
+            },
+        )
+
+        self.assertContains(response, "Измените цену хотя бы у одного товара")
+        self.assertFalse(PriceImport.objects.exists())
+
+    def test_manual_page_paginates_products_by_one_hundred(self):
+        Product.objects.bulk_create(
+            [
+                Product(
+                    title=f"Товар {index:03d}",
+                    sku=f"PAGE-{index:03d}",
+                    price=Decimal("100.00"),
+                )
+                for index in range(101)
+            ]
+        )
+        self.client.force_login(self.superuser)
+
+        first_page = self.client.get(self.manual_url)
+        second_page = self.client.get(self.manual_url, {"page": 2})
+
+        self.assertEqual(len(first_page.context["products"]), 100)
+        self.assertEqual(len(second_page.context["products"]), 2)
+        self.assertContains(first_page, "Следующая")
 
     def test_applied_import_rows_cannot_be_resolved(self):
         import_obj = PriceImport.objects.create(

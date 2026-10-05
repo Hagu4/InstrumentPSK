@@ -26,26 +26,35 @@ class ManualPriceBatchForm(forms.Form):
         cleaned = super().clean()
         raw_ids = self.data.getlist("product_id")
         if not raw_ids:
-            raise forms.ValidationError("Выберите хотя бы один товар")
+            raise forms.ValidationError("На странице нет товаров для изменения")
         if len(raw_ids) > 100:
             raise forms.ValidationError("За один раз можно изменить не более 100 товаров")
-        if len(raw_ids) != len(set(raw_ids)):
-            raise forms.ValidationError("Товар выбран несколько раз")
 
-        list_prices = self.data.getlist("new_price")
+        try:
+            product_ids = [int(raw_id) for raw_id in raw_ids]
+        except (TypeError, ValueError):
+            raise forms.ValidationError("Некорректный список товаров")
+        if len(product_ids) != len(set(product_ids)):
+            raise forms.ValidationError("Товар указан несколько раз")
+
+        current_prices = dict(
+            Product.objects.filter(pk__in=product_ids).values_list("pk", "price")
+        )
+        if len(current_prices) != len(product_ids):
+            raise forms.ValidationError("Один из товаров больше не существует")
+
         changes = []
-        for index, raw_id in enumerate(raw_ids):
-            raw_price = (
-                list_prices[index]
-                if len(list_prices) == len(raw_ids)
-                else self.data.get(f"price_{raw_id}", "")
-            )
+        for product_id in product_ids:
+            raw_price = self.data.get(f"price_{product_id}", "")
             try:
-                changes.append(
-                    ManualPriceChange(int(raw_id), Decimal(raw_price.replace(",", ".")))
-                )
-            except (InvalidOperation, TypeError, ValueError):
+                new_price = Decimal(raw_price.replace(",", "."))
+            except (AttributeError, InvalidOperation, TypeError, ValueError):
                 raise forms.ValidationError("Для каждого товара укажите корректную цену")
+            if new_price != current_prices[product_id]:
+                changes.append(ManualPriceChange(product_id, new_price))
+
+        if not changes:
+            raise forms.ValidationError("Измените цену хотя бы у одного товара")
         cleaned["changes"] = changes
         return cleaned
 

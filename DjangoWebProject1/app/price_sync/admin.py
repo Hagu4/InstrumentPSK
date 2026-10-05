@@ -92,16 +92,16 @@ class PriceImportAdmin(admin.ModelAdmin):
 
     def manual_view(self, request):
         self._require(request, "app.create_manual_priceimport")
-        query = request.GET.get("q", "").strip()
-        products = Product.objects.select_related("brand").order_by("title")
+        query = (request.GET.get("q") or request.POST.get("q") or "").strip()
+        page_number = request.GET.get("page") or request.POST.get("page")
+        products = Product.objects.select_related("brand").order_by("title", "pk")
         if query:
             products = products.filter(
                 Q(title__icontains=query)
                 | Q(sku__icontains=query)
                 | Q(brand__name__icontains=query)
             )
-        else:
-            products = products.none()
+        products = Paginator(products, 100).get_page(page_number)
         form = ManualPriceBatchForm(request.POST or None)
         if request.method == "POST" and form.is_valid():
             try:
@@ -117,7 +117,7 @@ class PriceImportAdmin(admin.ModelAdmin):
                 request,
                 title="Изменить цены вручную",
                 form=form,
-                products=products[:50],
+                products=products,
                 query=query,
             ),
         )

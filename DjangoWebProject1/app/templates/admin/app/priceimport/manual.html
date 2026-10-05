@@ -1,30 +1,44 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
+{% load static l10n %}
 
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'app/css/price_import_admin.css' %}">{% endblock %}
 {% block content %}
 <div class="price-panel">
   <h1>Изменить цены вручную</h1>
-  <p class="help">Выберите до 100 товаров и введите только новые цены. Скидка и зачёркнутая цена рассчитаются автоматически.</p>
+  <p class="help">Измените цены в нужных строках и нажмите «Сохранить изменения». Неизменённые товары будут пропущены, а скидка и зачёркнутая цена рассчитаются автоматически.</p>
+
   <form class="price-search" method="get">
     <input type="search" name="q" value="{{ query }}" placeholder="Название, артикул или бренд" autofocus>
     <button type="submit">Найти</button>
+    {% if query %}<a class="price-action secondary" href="{% url 'admin:app_priceimport_manual' %}">Сбросить</a>{% endif %}
   </form>
+
   {% if form.non_field_errors %}<div class="price-errors">{{ form.non_field_errors }}</div>{% endif %}
-  {% if query %}
+
   <form method="post">
     {% csrf_token %}
+    <input type="hidden" name="q" value="{{ query }}">
+    <input type="hidden" name="page" value="{{ products.number }}">
+    <div class="price-list-meta">
+      <span>Найдено: <strong>{{ products.paginator.count }}</strong></span>
+      <span>Страница {{ products.number }} из {{ products.paginator.num_pages }}</span>
+    </div>
     <div class="price-table-wrap">
       <table class="price-table">
-        <thead><tr><th></th><th>Артикул</th><th>Товар</th><th>Текущая цена</th><th>Новая цена</th></tr></thead>
+        <thead>
+          <tr><th>Артикул</th><th>Товар</th><th>Бренд</th><th>Текущая цена</th><th>Новая цена</th></tr>
+        </thead>
         <tbody>
         {% for product in products %}
           <tr>
-            <td><input type="checkbox" name="product_id" value="{{ product.pk }}" aria-label="Выбрать {{ product.title }}"></td>
-            <td>{{ product.sku|default:"—" }}</td>
+            <td>
+              <input type="hidden" name="product_id" value="{{ product.pk }}">
+              {{ product.sku|default:"—" }}
+            </td>
             <td>{{ product.title }}</td>
-            <td>{{ product.price }} ₽</td>
-            <td><input type="number" name="price_{{ product.pk }}" min="0.01" max="99999999.99" step="0.01" value="{{ product.price }}"></td>
+            <td>{{ product.brand.name|default:"—" }}</td>
+            <td class="price-current">{{ product.price }} ₽</td>
+            <td><input type="number" name="price_{{ product.pk }}" min="0.01" max="99999999.99" step="0.01" value="{{ product.price|unlocalize }}" aria-label="Новая цена для {{ product.title }}"></td>
           </tr>
         {% empty %}
           <tr><td colspan="5">Ничего не найдено.</td></tr>
@@ -32,8 +46,15 @@
         </tbody>
       </table>
     </div>
-    {% if products %}<button class="price-button" type="submit">Предварительный просмотр</button>{% endif %}
+    {% if products %}<button class="price-button" type="submit">Сохранить изменения</button>{% endif %}
   </form>
+
+  {% if products.paginator.num_pages > 1 %}
+    <nav class="price-pagination" aria-label="Страницы товаров">
+      {% if products.has_previous %}<a href="?q={{ query|urlencode }}&page={{ products.previous_page_number }}">Предыдущая</a>{% endif %}
+      <span>{{ products.number }} / {{ products.paginator.num_pages }}</span>
+      {% if products.has_next %}<a href="?q={{ query|urlencode }}&page={{ products.next_page_number }}">Следующая</a>{% endif %}
+    </nav>
   {% endif %}
 </div>
 {% endblock %}
