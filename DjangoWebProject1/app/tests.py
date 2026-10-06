@@ -28,6 +28,23 @@ class ViewTest(TestCase):
         self.assertTemplateUsed(response, 'app/index.html')
         self.assertContains(response, reverse('catalog'))
 
+    def test_home_links_to_current_supplier_brands(self):
+        response = self.client.get(reverse('home'))
+
+        for slug, name in (
+            ('wortex', 'WORTEX'),
+            ('champion', 'CHAMPION'),
+            ('startul', 'STARTUL'),
+            ('bull', 'BULL'),
+            ('eco', 'ECO'),
+            ('denzel', 'DENZEL'),
+        ):
+            self.assertContains(
+                response,
+                f'href="{reverse("catalog")}?brand={slug}"',
+            )
+            self.assertContains(response, f'<span class="brand-name">{name}</span>')
+
     def test_contact(self):
         """Tests the contact page."""
         response = self.client.get(reverse('contact'))
