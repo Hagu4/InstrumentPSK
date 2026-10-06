@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .error_models import ErrorEvent
+from .price_sync import admin as price_sync_admin  # noqa: F401
 
 
 @admin.register(ErrorEvent)
