@@ -1,0 +1,78 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'app/css/price_import_admin.css' %}">{% endblock %}
+{% block extrajs %}{{ block.super }}<script defer src="{% static 'app/js/price_import_admin.js' %}"></script>{% endblock %}
+{% block content %}
+<div class="price-panel">
+  <div class="price-heading">
+    <div><h1>Предварительный просмотр #{{ price_import.pk }}</h1><p>{{ price_import.get_source_type_display }} · <span data-price-import-status>{{ price_import.get_status_display }}</span></p></div>
+    <a class="price-link" href="{% url 'admin:app_priceimport_changelist' %}">История обновлений</a>
+  </div>
+  {% if latest_success %}<p class="last-update">Последнее успешное обновление: {{ latest_success.applied_at }} — {{ latest_success.applied_by|default:"система" }}</p>{% endif %}
+  <div class="price-summary">
+    <span>Всего <b data-price-summary="total">{{ price_import.total_rows }}</b></span><span>Найдено <b data-price-summary="matched">{{ price_import.matched_rows }}</b></span><span>Проверить <b data-price-summary="review">{{ price_import.review_rows }}</b></span><span>Пропущено <b data-price-summary="skipped">{{ price_import.skipped_rows }}</b></span><span>Изменится <b data-price-summary="changed">{{ price_import.changed_rows }}</b></span><span>Более 50% <b data-price-summary="anomalies">{{ price_import.anomaly_rows }}</b></span>
+  </div>
+  <div class="price-primary-actions" data-price-primary-actions>
+    {% if price_import.anomaly_rows and price_import.status == 'draft' %}
+      <form data-price-confirm-action method="post" action="{% url 'admin:app_priceimport_confirm_anomalies' price_import.pk %}">{% csrf_token %}<input type="hidden" name="confirmed" value="on"><button class="price-button warning" type="submit">Подтвердить все изменения более 50%</button></form>
+    {% endif %}
+    {% if price_import.status == 'draft' or price_import.status == 'ready' %}
+      <form data-price-apply-action method="post" action="{% url 'admin:app_priceimport_apply' price_import.pk %}"{% if price_import.status != 'ready' %} hidden{% endif %}>{% csrf_token %}<button class="price-button" type="submit">Применить найденные цены</button></form>
+    {% endif %}
+    {% if price_import.status == 'applied' %}
+      <form method="post" action="{% url 'admin:app_priceimport_rollback' price_import.pk %}">{% csrf_token %}<button class="price-button danger" type="submit">Откатить последнее обновление</button></form>
+    {% endif %}
+  </div>
+  {% if price_import.status != 'applied' and price_import.status != 'rolled_back' %}
+    <form id="price-bulk-form" class="price-bulk-actions" data-price-bulk-form method="post" action="{% url 'admin:app_priceimport_skip_selected' price_import.pk %}">
+      {% csrf_token %}
+      <label class="price-select-all"><input type="checkbox" data-price-select-all> Выбрать все на странице</label>
+      <button class="price-button danger" type="submit" data-price-bulk-submit disabled>Убрать выбранные из обновления (<span data-price-selected-count>0</span>)</button>
+      <span class="price-bulk-status" data-price-bulk-status role="status" aria-live="polite"></span>
+    </form>
+  {% endif %}
+  <div class="price-table-wrap"><table class="price-table price-preview-table">
+    <thead><tr><th class="price-select-column">Выбор</th><th>Строка</th><th>Артикул</th><th>Название</th><th>Товар</th><th>Было</th><th>Станет</th><th>Скидка</th><th>Зачёркнутая</th><th>Состояние</th><th>Действия</th></tr></thead>
+    <tbody data-price-table-body>{% for row in page %}
+    {% if row.starts_attention_section %}
+      <tr class="price-section-divider price-section-attention"><td colspan="11"><strong>Требуют обязательной проверки</strong><span>Неоднозначные данные и изменения цены более чем на 50%</span></td></tr>
+    {% endif %}
+    {% if row.starts_regular_section %}
+      <tr class="price-section-divider price-section-regular"><td colspan="11"><strong>Остальные изменения цен</strong><span>Сопоставлены автоматически — проверьте перед применением</span></td></tr>
+    {% endif %}
+    <tr data-price-row data-row-id="{{ row.pk }}"{% if row.requires_attention %} class="price-attention{% if row.status == 'matched' and row.after_price > row.before_price %} price-change price-increase{% elif row.status == 'matched' and row.after_price < row.before_price %} price-change price-decrease{% endif %}"{% elif row.status == 'matched' and row.after_price > row.before_price %} class="price-change price-increase"{% elif row.status == 'matched' and row.after_price < row.before_price %} class="price-change price-decrease"{% endif %}>
+      <td class="price-select-column">{% if price_import.status != 'applied' and price_import.status != 'rolled_back' %}<input type="checkbox" name="row_ids" value="{{ row.pk }}" form="price-bulk-form" data-price-row-select aria-label="Выбрать строку {{ row.row_number }}">{% else %}—{% endif %}</td>
+      <td>{{ row.row_number }}</td><td>{{ row.source_sku|default:"—" }}</td><td>{{ row.source_title }}</td><td>{{ row.product|default:"Не выбран" }}</td><td>{{ row.before_price|default:"—" }}</td><td>{{ row.after_price|default:row.source_price }}</td><td>{{ row.after_discount_percent|default:"—" }}{% if row.after_discount_percent %}%{% endif %}</td><td>{{ row.after_old_price|default:"—" }}</td><td>{{ row.get_status_display }}</td>
+      <td>{% if row.status == 'invalid' %}
+        <form class="inline-form row-remove-form" data-price-row-remove-form method="post" action="{% url 'admin:app_priceimport_skip' price_import.pk row.pk %}">{% csrf_token %}<button type="submit">Убрать некорректную строку</button></form>
+      {% elif row.status == 'needs_review' %}
+        <form class="resolve-form" method="post" action="{% url 'admin:app_priceimport_resolve' price_import.pk row.pk %}">{% csrf_token %}
+          {% if row.candidate_products %}
+            <select name="product" required aria-label="Выберите товар">
+              <option value="">Кандидаты…</option>
+              {% for candidate in row.candidate_products %}<option value="{{ candidate.pk }}">#{{ candidate.pk }} · {{ candidate.title }}{% if candidate.sku %} · {{ candidate.sku }}{% endif %}</option>{% endfor %}
+            </select>
+          {% else %}
+            <input type="number" min="1" name="product" required placeholder="ID товара" aria-label="ID товара">
+          {% endif %}
+          <button type="submit">Сопоставить</button>
+        </form>
+        <div class="row-secondary-actions">
+          <a href="{% url 'admin:app_product_changelist' %}?q={{ row.source_title|urlencode }}" target="_blank" rel="noopener">Найти товар</a>
+          <form class="inline-form" data-price-row-remove-form method="post" action="{% url 'admin:app_priceimport_skip' price_import.pk row.pk %}">{% csrf_token %}<button type="submit">Убрать из обновления</button></form>
+        </div>
+      {% elif row.status == 'matched' and price_import.status != 'applied' and price_import.status != 'rolled_back' %}
+        <form class="inline-form row-remove-form" data-price-row-remove-form method="post" action="{% url 'admin:app_priceimport_skip' price_import.pk row.pk %}">{% csrf_token %}<button type="submit">Убрать из обновления</button></form>
+      {% else %}—{% endif %}</td>
+    </tr>{% empty %}<tr data-price-empty-row><td colspan="11">Изменений цен для просмотра нет.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="price-pagination" aria-label="Страницы изменений цен">
+      {% if page.has_previous %}<a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page.previous_page_number }}">← Предыдущая</a>{% endif %}
+      <span>Страница <b>{{ page.number }}</b> из <b>{{ page.paginator.num_pages }}</b></span>
+      {% if page.has_next %}<a href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page.next_page_number }}">Следующая →</a>{% endif %}
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

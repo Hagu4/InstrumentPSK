@@ -605,12 +605,12 @@
     <script src="{% static 'app/scripts/respond.js' %}"></script>
     <script src="{% static 'app/js/dropdown.js' %}"></script>
     <script src="{% static 'app/js/category-hover.js' %}"></script>
-    <script src="{% static 'app/js/live_search.js' %}"></script>
+    <script src="{% static 'app/js/live_search.js' %}?v=20260913-security"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.27.3/trumbowyg.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Trumbowyg/2.27.3/langs/ru.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
-    <script src="{% static 'app/js/quick-view.js' %}"></script>
+    <script src="{% static 'app/js/quick-view.js' %}?v=20260913-security"></script>
     <script src="{% static 'app/js/hero-animations.js' %}"></script>
     {% block scripts %}{% endblock %}
     <script>
@@ -623,27 +623,32 @@
             toast.classList.add('toast-message');
 
             let iconHtml = '';
-            let displayMessage = message;
+            const content = document.createElement('div');
+            content.className = 'content';
+            content.textContent = message;
 
             if (type === 'success') {
                 iconHtml = `<div class="icon-wrapper"><svg class="icon success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
                 if (productTitle) {
-                    displayMessage = `
-                        <div class="top-line">
-                            <span class="product-title">${productTitle}</span>
-                        </div>
-                        <div class="message-text">добавлен в корзину</div>
-                    `;
+                    const topLine = document.createElement('div');
+                    topLine.className = 'top-line';
+                    const title = document.createElement('span');
+                    title.className = 'product-title';
+                    title.textContent = productTitle;
+                    topLine.append(title);
+                    const messageText = document.createElement('div');
+                    messageText.className = 'message-text';
+                    messageText.textContent = 'добавлен в корзину';
+                    content.replaceChildren(topLine, messageText);
                 }
             } else if (type === 'error') {
                 iconHtml = `<svg class="icon error" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
             }
             // Add more types as needed
 
-            toast.innerHTML = `
-                ${iconHtml}
-                <div class="content">${displayMessage}</div>
-            `;
+            // Only the fixed SVG markup is interpreted as HTML.
+            toast.innerHTML = iconHtml;
+            toast.append(content);
 
             toastContainer.appendChild(toast);
 

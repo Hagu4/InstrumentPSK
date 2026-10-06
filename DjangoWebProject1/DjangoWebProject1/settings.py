@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import posixpath
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -84,6 +85,7 @@ JAZZMIN_SETTINGS = {
     "order_with_respect_to": [
         "auth",
         "app.Product",
+        "app.PriceImport",
         "app.Category",
         "app.Characteristic",
         "app.Review",
@@ -97,6 +99,7 @@ JAZZMIN_SETTINGS = {
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "app.Product": "fas fa-box-open",
+        "app.PriceImport": "fas fa-ruble-sign",
         "app.Category": "fas fa-tags",
         "app.Brand": "fas fa-copyright",
         "app.RepairRequest": "fas fa-wrench",
@@ -252,6 +255,16 @@ STORAGES = {
 
 MEDIA_URL = '/media/'  # URL-префикс для медиафайлов
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Путь к папке с медиафайлами
+
+PRICE_IMPORT_ROOT = Path(
+    os.environ.get('PRICE_IMPORT_ROOT', Path(BASE_DIR) / 'private-price-imports')
+).resolve()
+PRICE_IMPORT_MAX_BYTES = int(os.environ.get('PRICE_IMPORT_MAX_BYTES', 10 * 1024 * 1024))
+PRICE_IMPORT_MAX_ROWS = int(os.environ.get('PRICE_IMPORT_MAX_ROWS', 100_000))
+PRICE_IMPORT_MAX_UNCOMPRESSED_BYTES = int(
+    os.environ.get('PRICE_IMPORT_MAX_UNCOMPRESSED_BYTES', 100 * 1024 * 1024)
+)
+PRICE_IMPORT_SUPPLIER = 'stiooo'
 
 DEFAULT_CHARSET = 'utf-8'
 FILE_CHARSET = 'utf-8'

@@ -1,9 +1,9 @@
 from decimal import Decimal
 from datetime import datetime, timedelta
-import pickle
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpRequest, HttpResponseForbidden, JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User, Group
@@ -14,32 +14,12 @@ from django.utils.text import slugify
 from transliterate import slugify as transliterate_slugify
 from .models import Product, Review, Category, Order, OrderItem, Profile, ProductCharacteristic, Feedback, Favorite, RepairRequest, Brand, ProductImage, Promotion, News, PromoCode, ReviewImage, ReviewVote
 from .forms import BootstrapAuthenticationForm, ProductForm, ReviewForm, FeedbackForm, ProfileForm, BootstrapUserCreationForm, ExtendedRegistrationForm, DeliveryMethodForm, DeliveryAddressForm, PaymentMethodForm, ProductCharacteristicFormSet
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, Avg, Sum, Case, When, Count, Min, Max, Prefetch
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from weasyprint import HTML
 from django.templatetags.static import static # Added for quick view image fallback
-from django.core.cache import cache
-
-def invalidate_product_cache(product_id):
-    """
-    Invalidate cache for a specific product
-    """
-    # Invalidate the quick view cache
-    cache_key = f'product_quick_view_{product_id}'
-    cache.delete(cache_key)
-    
-    # Invalidate other related caches if needed
-    # cache.delete_pattern(f'product_detail_{product_id}*')
-    # cache.delete_pattern(f'catalog_*')
-
-def invalidate_catalog_cache():
-    """
-    Invalidate catalog cache
-    """
-    cache.delete_pattern('catalog_*')
-    cache.delete_pattern('product_quick_view_*')
 
 def switch_layout(text):
     if not text: return text
@@ -659,15 +639,8 @@ def catalog(request, category_slug=None):
     }
     return render(request, 'app/catalog.html', context)
 
+@never_cache
 def product_detail(request, product_id):
-    # Create cache key for product detail view
-    cache_key = f"product_detail_{product_id}"
-    
-    # Try to get data from cache first
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return render(request, 'app/product_detail.html', cached_data)
-    
     product = get_object_or_404(Product.objects.select_related('brand', 'category').prefetch_related('images', 'characteristics__characteristic', 'reviews'), id=product_id)
 
     recently_viewed = request.session.get('recently_viewed', [])
@@ -687,6 +660,7 @@ def product_detail(request, product_id):
         review_count=Sum(1)
     )
 
+    form = ReviewForm()
     if request.method == 'POST':
         if 'add_to_cart' in request.POST and request.user.is_authenticated:
             quantity = int(request.POST.get('quantity', 1))
@@ -708,22 +682,20 @@ def product_detail(request, product_id):
             return redirect('cart')
         
         elif 'review_submit' in request.POST:
-            form = ReviewForm(request.POST)
+            if not request.user.is_authenticated:
+                return HttpResponseForbidden('Для публикации отзыва необходимо войти в аккаунт.')
+            form = ReviewForm(request.POST, request.FILES)
             if form.is_valid():
-                review = form.save(commit=False)
-                review.author = request.user
-                review.product = product
-                review.date = timezone.now()
-                review.save()
-                
-                images = request.FILES.getlist('review_images')
-                for image in images:
-                    ReviewImage.objects.create(review=review, image=image)
+                with transaction.atomic():
+                    review = form.save(commit=False)
+                    review.author = request.user
+                    review.product = product
+                    review.date = timezone.now()
+                    review.save()
+                    for image in form.cleaned_data['prepared_images']:
+                        ReviewImage.objects.create(review=review, image=image)
                 
                 return redirect('product_detail', product_id=product.id)
-    else:
-        form = ReviewForm()
-
     similar_products = []
     if product.category:
         similar_products = Product.objects.filter(category=product.category).exclude(id=product_id).prefetch_related('images', 'reviews')[:10]
@@ -762,20 +734,6 @@ def product_detail(request, product_id):
         'user_review_votes': user_review_votes,
         'bought_together': bought_together_products,
     }
-    
-    # Cache the data for 30 minutes (1800 seconds)
-    # Убираем несериализуемые объекты из контекста для кэширования
-    cacheable_context = {}
-    for key, value in context.items():
-        try:
-            # Пытаемся сериализовать объект
-            pickle.dumps(value)
-            cacheable_context[key] = value
-        except (TypeError, AttributeError):
-            # Если не сериализуется, пропускаем
-            continue
-    
-    cache.set(cache_key, cacheable_context, 1800)
     
     return render(request, 'app/product_detail.html', context)
 
@@ -1000,24 +958,20 @@ from .forms import BootstrapAuthenticationForm, ProductForm, ReviewForm, Feedbac
 
 @login_required
 def add_product(request):
+    if not is_manager(request.user):
+        return HttpResponseForbidden('У вас нет прав для добавления товаров.')
     if request.method == "POST":
-        form = ProductForm(request.POST)
+        form = ProductForm(request.POST, request.FILES)
         formset = ProductCharacteristicFormSet(request.POST, instance=Product())
         if form.is_valid() and formset.is_valid():
-            product = form.save(commit=False)
-            product.author = request.user
-            product.save()
-            
-            formset.instance = product
-            formset.save()
-            
-            images = request.FILES.getlist('images')
-            for image in images:
-                ProductImage.objects.create(product=product, image=image)
-            
-            # Invalidate cache for this product and catalog
-            invalidate_product_cache(product.id)
-            invalidate_catalog_cache()
+            with transaction.atomic():
+                product = form.save(commit=False)
+                product.author = request.user
+                product.save()
+                formset.instance = product
+                formset.save()
+                for image in form.cleaned_data['prepared_images']:
+                    ProductImage.objects.create(product=product, image=image)
             
             return redirect('product_detail', product_id=product.id)
     else:
@@ -1554,18 +1508,11 @@ def get_product_details_json(request, product_id):
 from django.views.decorators.http import require_GET
 
 @require_GET
+@never_cache
 def product_quick_view(request, product_id):
     """
     Returns a JSON response with detailed product information for the quick view modal.
     """
-    # Create cache key based on product ID
-    cache_key = f'product_quick_view_{product_id}'
-    
-    # Try to get data from cache first
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return JsonResponse(cached_data)
-    
     product = get_object_or_404(
         Product.objects.select_related('brand').prefetch_related(
             'images', 'characteristics__characteristic', 'reviews'
@@ -1611,9 +1558,6 @@ def product_quick_view(request, product_id):
         'average_rating': float(product.average_rating) if product.average_rating is not None else 0.0, # Pass average rating
         'review_count': product.reviews.count() # Pass review count
     }
-    
-    # Cache the data for 30 minutes (1800 seconds)
-    cache.set(cache_key, data, 1800)
     
     return JsonResponse(data)
 
@@ -2328,13 +2272,10 @@ def edit_product(request, product_id):
             formset.save()
             
             # Сохраняем изображения
-            images = request.FILES.getlist('images')
+            images = form.cleaned_data['prepared_images']
             for image in images:
                 ProductImage.objects.create(product=product, image=image)
             
-            # Invalidate cache for this product and catalog
-            invalidate_product_cache(product.id)
-            invalidate_catalog_cache()
             
             return redirect('product_detail', product_id=product.id)
     else:
@@ -2364,8 +2305,6 @@ def delete_product(request, product_id):
         # Удаляем продукт
         product.delete()
         
-        # Invalidate cache for catalog (since a product was removed)
-        invalidate_catalog_cache()
         
         messages.success(request, 'Продукт успешно удален.')
         return redirect('catalog')

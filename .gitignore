@@ -14,10 +14,14 @@
 !/CHANGELOG.md
 !/RELEASE.md
 !/DEPLOYMENT.md
+!/docs/
 !/DjangoWebProject1/
 !/tests/
 !/.github/
 /DjangoWebProject1/*
+!/docs/superpowers/
+!/docs/superpowers/specs/
+!/docs/superpowers/specs/*.md
 !/DjangoWebProject1/manage.py
 !/DjangoWebProject1/.env.example
 !/DjangoWebProject1/app/
