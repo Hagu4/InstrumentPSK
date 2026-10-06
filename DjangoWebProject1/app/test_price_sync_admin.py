@@ -105,6 +105,106 @@ class PriceSyncAdminTests(TestCase):
         self.assertNotContains(response, "Отсутствующий в каталоге товар")
         self.assertContains(skipped_response, "Отсутствующий в каталоге товар")
 
+    def test_preview_groups_attention_rows_before_other_price_changes(self):
+        normal_product = Product.objects.create(
+            title="Обычное изменение",
+            sku="NORMAL-1",
+            price=Decimal("100.00"),
+        )
+        anomaly_product = Product.objects.create(
+            title="Большое изменение",
+            sku="ANOMALY-1",
+            price=Decimal("100.00"),
+        )
+        unchanged_product = Product.objects.create(
+            title="Цена без изменения",
+            sku="UNCHANGED-1",
+            price=Decimal("100.00"),
+        )
+        price_import = PriceImport.objects.create(
+            source_type=PriceImport.SourceType.SUPPLIER_XLSX,
+            uploaded_by=self.superuser,
+        )
+        PriceImportRow.objects.create(
+            price_import=price_import,
+            row_number=2,
+            source_title=normal_product.title,
+            source_price=Decimal("120.00"),
+            product=normal_product,
+            status=PriceImportRow.Status.MATCHED,
+            before_price=Decimal("100.00"),
+            after_price=Decimal("120.00"),
+        )
+        PriceImportRow.objects.create(
+            price_import=price_import,
+            row_number=3,
+            source_title=unchanged_product.title,
+            source_price=Decimal("100.00"),
+            product=unchanged_product,
+            status=PriceImportRow.Status.MATCHED,
+            before_price=Decimal("100.00"),
+            after_price=Decimal("100.00"),
+        )
+        invalid_row = PriceImportRow.objects.create(
+            price_import=price_import,
+            row_number=98,
+            source_title="Некорректная цена поставщика",
+            status=PriceImportRow.Status.INVALID,
+            diagnostic_code="invalid_price",
+        )
+        PriceImportRow.objects.create(
+            price_import=price_import,
+            row_number=99,
+            source_title="Неоднозначное сопоставление",
+            source_price=Decimal("150.00"),
+            status=PriceImportRow.Status.NEEDS_REVIEW,
+        )
+        PriceImportRow.objects.create(
+            price_import=price_import,
+            row_number=100,
+            source_title=anomaly_product.title,
+            source_price=Decimal("200.00"),
+            product=anomaly_product,
+            status=PriceImportRow.Status.MATCHED,
+            diagnostic_code="large_change",
+            before_price=Decimal("100.00"),
+            after_price=Decimal("200.00"),
+        )
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(
+            reverse("admin:app_priceimport_preview", args=[price_import.pk])
+        )
+        content = response.content.decode()
+
+        self.assertContains(response, "Требуют обязательной проверки")
+        self.assertContains(response, "Остальные изменения цен")
+        self.assertContains(response, "Неоднозначное сопоставление")
+        self.assertContains(response, "Некорректная цена поставщика")
+        self.assertContains(
+            response,
+            reverse(
+                "admin:app_priceimport_skip",
+                args=[price_import.pk, invalid_row.pk],
+            ),
+        )
+        self.assertContains(response, anomaly_product.title)
+        self.assertContains(response, normal_product.title)
+        self.assertNotContains(response, unchanged_product.title)
+        self.assertLess(
+            content.index("Требуют обязательной проверки"),
+            content.index("Неоднозначное сопоставление"),
+        )
+        self.assertLess(
+            content.index(anomaly_product.title),
+            content.index("Остальные изменения цен"),
+        )
+        self.assertLess(
+            content.index("Остальные изменения цен"),
+            content.index(normal_product.title),
+        )
+        self.assertEqual(response.context["page"].paginator.per_page, 100)
+
     def test_public_and_staff_without_permission_cannot_view_imports(self):
         self.assertEqual(self.client.get(self.history_url).status_code, 302)
         self.client.force_login(self.staff_without_permissions)

@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
@@ -139,10 +139,28 @@ class PriceImportAdmin(admin.ModelAdmin):
         price_import = get_object_or_404(PriceImport, pk=pk)
         rows = price_import.rows.select_related("product", "product__brand")
         state = request.GET.get("state")
+        attention_filter = Q(
+            status__in=(
+                PriceImportRow.Status.NEEDS_REVIEW,
+                PriceImportRow.Status.INVALID,
+            )
+        ) | Q(
+            status=PriceImportRow.Status.MATCHED,
+            diagnostic_code="large_change",
+        )
         if state:
             rows = rows.filter(status=state)
         else:
-            rows = rows.exclude(status=PriceImportRow.Status.SKIPPED)
+            changed_filter = Q(status=PriceImportRow.Status.MATCHED) & ~Q(
+                before_price=F("after_price")
+            )
+            rows = rows.filter(attention_filter | changed_filter).annotate(
+                attention_order=Case(
+                    When(attention_filter, then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
+            ).order_by("attention_order", "row_number", "pk")
         query = request.GET.get("q", "").strip()
         if query:
             rows = rows.filter(
@@ -151,7 +169,8 @@ class PriceImportAdmin(admin.ModelAdmin):
                 | Q(source_brand__icontains=query)
                 | Q(product__title__icontains=query)
             )
-        page = Paginator(rows, 50).get_page(request.GET.get("page"))
+        attention_count = rows.filter(attention_filter).count() if not state else 0
+        page = Paginator(rows, 100).get_page(request.GET.get("page"))
         candidate_ids = {
             product_id
             for row in page.object_list
@@ -169,6 +188,30 @@ class PriceImportAdmin(admin.ModelAdmin):
                 for product_id in (row.candidate_product_ids or [])
                 if product_id in candidate_products
             ]
+        if not state and page.object_list:
+            first_position = page.start_index()
+            for offset, row in enumerate(page.object_list):
+                position = first_position + offset
+                row.requires_attention = (
+                    row.status
+                    in (
+                        PriceImportRow.Status.NEEDS_REVIEW,
+                        PriceImportRow.Status.INVALID,
+                    )
+                    or (
+                        row.status == PriceImportRow.Status.MATCHED
+                        and row.diagnostic_code == "large_change"
+                    )
+                )
+                row.starts_attention_section = (
+                    offset == 0 and row.requires_attention
+                )
+                row.starts_regular_section = (
+                    (offset == 0 and not row.requires_attention)
+                    or position == attention_count + 1
+                )
+        pagination_query = request.GET.copy()
+        pagination_query.pop("page", None)
         latest_success = PriceImport.objects.filter(applied_at__isnull=False).order_by("-applied_at", "-pk").first()
         return TemplateResponse(
             request,
@@ -178,6 +221,7 @@ class PriceImportAdmin(admin.ModelAdmin):
                 title="Предварительный просмотр",
                 price_import=price_import,
                 page=page,
+                pagination_query=pagination_query.urlencode(),
                 latest_success=latest_success,
                 resolve_form=ResolvePriceImportRowForm(),
             ),

@@ -48,8 +48,17 @@
 .price-change { transition: background-color .15s ease; }
 .price-increase { background: #fff6f3; }
 .price-decrease { background: #f2faf5; }
+.price-attention { background: #fff9e8; }
 .price-increase td:nth-child(6) { color: #a33b2f; font-weight: 700; }
 .price-decrease td:nth-child(6) { color: #237a4b; font-weight: 700; }
+.price-section-divider td {
+  padding: 14px 12px; border-bottom: 1px solid #d8e0eb;
+  color: #26364f;
+}
+.price-section-divider strong { display: block; font-size: 15px; }
+.price-section-divider span { display: block; margin-top: 2px; color: #65748b; font-size: 12px; }
+.price-section-attention td { background: #fff2c9; border-top: 2px solid #e0ad35; }
+.price-section-regular td { background: #eef3f8; border-top: 2px solid #9aa9bd; }
 .price-errors {
   margin: 12px 0; padding: 12px; border-radius: 10px;
   background: #fff0f0; color: #a91e1e;
