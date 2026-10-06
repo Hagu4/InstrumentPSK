@@ -2,7 +2,7 @@ from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Case, F, IntegerField, Q, Value, When
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -24,6 +24,7 @@ from .services import (
     create_preview,
     resolve_row,
     skip_row,
+    skip_rows,
 )
 
 
@@ -71,6 +72,7 @@ class PriceImportAdmin(admin.ModelAdmin):
             path("<int:pk>/preview/", self.admin_site.admin_view(self.preview_view), name="app_priceimport_preview"),
             path("<int:pk>/resolve/<int:row_id>/", self.admin_site.admin_view(require_POST(self.resolve_view)), name="app_priceimport_resolve"),
             path("<int:pk>/skip/<int:row_id>/", self.admin_site.admin_view(require_POST(self.skip_view)), name="app_priceimport_skip"),
+            path("<int:pk>/skip-selected/", self.admin_site.admin_view(require_POST(self.skip_selected_view)), name="app_priceimport_skip_selected"),
             path("<int:pk>/confirm-anomalies/", self.admin_site.admin_view(require_POST(self.confirm_anomalies_view)), name="app_priceimport_confirm_anomalies"),
             path("<int:pk>/apply/", self.admin_site.admin_view(require_POST(self.apply_view)), name="app_priceimport_apply"),
             path("<int:pk>/rollback/", self.admin_site.admin_view(require_POST(self.rollback_view)), name="app_priceimport_rollback"),
@@ -83,6 +85,22 @@ class PriceImportAdmin(admin.ModelAdmin):
 
     def _context(self, request, **extra):
         return {**self.admin_site.each_context(request), **extra}
+
+    @staticmethod
+    def _is_ajax(request):
+        return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+    @staticmethod
+    def _summary(price_import):
+        price_import.refresh_from_db()
+        return {
+            "total": price_import.total_rows,
+            "matched": price_import.matched_rows,
+            "review": price_import.review_rows,
+            "skipped": price_import.skipped_rows,
+            "changed": price_import.changed_rows,
+            "anomalies": price_import.anomaly_rows,
+        }
 
     def upload_view(self, request):
         self._require(request, "app.preview_priceimport")
@@ -248,9 +266,61 @@ class PriceImportAdmin(admin.ModelAdmin):
         try:
             skip_row(row, request.user)
         except PriceImportValidationError as error:
+            if self._is_ajax(request):
+                return JsonResponse({"error": error.message}, status=409)
             messages.error(request, error.message)
         else:
+            if self._is_ajax(request):
+                return JsonResponse(
+                    {
+                        "removed_ids": [row.pk],
+                        "summary": self._summary(row.price_import),
+                        "status": row.price_import.status,
+                        "status_display": row.price_import.get_status_display(),
+                    }
+                )
             messages.success(request, "Строка пропущена.")
+        return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
+
+    def skip_selected_view(self, request, pk):
+        self._require(request, "app.resolve_priceimport")
+        price_import = get_object_or_404(PriceImport, pk=pk)
+        raw_ids = request.POST.getlist("row_ids")
+        try:
+            row_ids = list(dict.fromkeys(int(row_id) for row_id in raw_ids))
+        except (TypeError, ValueError):
+            error = PriceImportValidationError(
+                "invalid_row_ids", "Получен неверный список товаров"
+            )
+        else:
+            if len(row_ids) > 100:
+                error = PriceImportValidationError(
+                    "too_many_rows", "За один раз можно убрать не более 100 товаров"
+                )
+            else:
+                try:
+                    removed_rows = skip_rows(price_import.pk, row_ids, request.user)
+                except PriceImportValidationError as caught_error:
+                    error = caught_error
+                else:
+                    payload = {
+                        "removed_ids": [row.pk for row in removed_rows],
+                        "summary": self._summary(price_import),
+                        "status": price_import.status,
+                        "status_display": price_import.get_status_display(),
+                    }
+                    if self._is_ajax(request):
+                        return JsonResponse(payload)
+                    messages.success(
+                        request, f"Убрано из обновления: {len(removed_rows)}."
+                    )
+                    return HttpResponseRedirect(
+                        reverse("admin:app_priceimport_preview", args=[pk])
+                    )
+
+        if self._is_ajax(request):
+            return JsonResponse({"error": error.message}, status=400)
+        messages.error(request, error.message)
         return HttpResponseRedirect(reverse("admin:app_priceimport_preview", args=[pk]))
 
     def confirm_anomalies_view(self, request, pk):

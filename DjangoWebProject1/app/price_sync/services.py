@@ -574,29 +574,60 @@ def confirm_anomalies(import_id: int, row_ids=None) -> PriceImport:
 
 
 @transaction.atomic
-def skip_row(row: PriceImportRow, user) -> PriceImportRow:
-    row = PriceImportRow.objects.select_for_update().select_related("price_import").get(
-        pk=row.pk
-    )
-    if row.price_import.status not in (
-        PriceImport.Status.DRAFT,
-        PriceImport.Status.READY,
-    ):
+def skip_rows(import_id: int, row_ids, user) -> list[PriceImportRow]:
+    price_import = PriceImport.objects.select_for_update().get(pk=import_id)
+    _require_editable_import(price_import)
+    requested_ids = list(dict.fromkeys(row_ids))
+    if not requested_ids:
         raise PriceImportValidationError(
-            "import_not_editable", "Эту операцию больше нельзя редактировать"
+            "no_rows_selected", "Выберите хотя бы один товар"
         )
-    row.status = PriceImportRow.Status.SKIPPED
-    row.product = None
-    row.candidate_product_ids = []
-    row.after_price = None
-    row.after_old_price = None
-    row.after_discount_percent = None
-    row.after_price_updated_at = None
-    row.resolved_by = user
-    row.resolved_at = timezone.now()
-    row.save()
-    refresh_import_counters(row.price_import)
-    return row
+    rows_by_id = {
+        row.pk: row
+        for row in PriceImportRow.objects.select_for_update().filter(
+            price_import=price_import,
+            pk__in=requested_ids,
+        )
+    }
+    if len(rows_by_id) != len(requested_ids):
+        raise PriceImportValidationError(
+            "row_not_in_import",
+            "Одна из выбранных строк не относится к этому обновлению",
+        )
+
+    resolved_at = timezone.now()
+    rows = [rows_by_id[row_id] for row_id in requested_ids]
+    for row in rows:
+        row.status = PriceImportRow.Status.SKIPPED
+        row.product = None
+        row.candidate_product_ids = []
+        row.after_price = None
+        row.after_old_price = None
+        row.after_discount_percent = None
+        row.after_price_updated_at = None
+        row.resolved_by = user
+        row.resolved_at = resolved_at
+    PriceImportRow.objects.bulk_update(
+        rows,
+        fields=(
+            "status",
+            "product",
+            "candidate_product_ids",
+            "after_price",
+            "after_old_price",
+            "after_discount_percent",
+            "after_price_updated_at",
+            "resolved_by",
+            "resolved_at",
+        ),
+        batch_size=100,
+    )
+    refresh_import_counters(price_import)
+    return rows
+
+
+def skip_row(row: PriceImportRow, user) -> PriceImportRow:
+    return skip_rows(row.price_import_id, [row.pk], user)[0]
 
 
 @transaction.atomic

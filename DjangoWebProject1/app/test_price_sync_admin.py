@@ -391,6 +391,148 @@ class PriceSyncAdminTests(TestCase):
         self.assertEqual(row.status, PriceImportRow.Status.SKIPPED)
         self.assertEqual(self.product.price, Decimal("1000.00"))
 
+    def test_bulk_skip_json_removes_selected_rows_and_updates_summary(self):
+        from app.price_sync.services import ManualPriceChange, create_manual_preview
+
+        second_product = Product.objects.create(
+            title="Второй товар для исключения",
+            sku="ADMIN-BULK-2",
+            price=Decimal("800.00"),
+        )
+        import_obj = create_manual_preview(
+            [
+                ManualPriceChange(self.product.pk, Decimal("1250.00")),
+                ManualPriceChange(second_product.pk, Decimal("900.00")),
+            ],
+            self.superuser,
+        )
+        rows = list(import_obj.rows.order_by("pk"))
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(
+            f"/management-psk-zone/app/priceimport/{import_obj.pk}/skip-selected/",
+            {"row_ids": [str(row.pk) for row in rows]},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["removed_ids"], [row.pk for row in rows])
+        self.assertEqual(response.json()["status"], PriceImport.Status.READY)
+        self.assertEqual(
+            response.json()["summary"],
+            {
+                "total": 2,
+                "matched": 0,
+                "review": 0,
+                "skipped": 2,
+                "changed": 0,
+                "anomalies": 0,
+            },
+        )
+        self.assertFalse(
+            import_obj.rows.exclude(status=PriceImportRow.Status.SKIPPED).exists()
+        )
+        self.product.refresh_from_db()
+        second_product.refresh_from_db()
+        self.assertEqual(self.product.price, Decimal("1000.00"))
+        self.assertEqual(second_product.price, Decimal("800.00"))
+
+    def test_bulk_skip_rejects_foreign_row_without_partial_update(self):
+        from app.price_sync.services import ManualPriceChange, create_manual_preview
+
+        first_import = create_manual_preview(
+            [ManualPriceChange(self.product.pk, Decimal("1250.00"))],
+            self.superuser,
+        )
+        other_product = Product.objects.create(
+            title="Товар другой операции",
+            sku="ADMIN-FOREIGN-1",
+            price=Decimal("500.00"),
+        )
+        second_import = create_manual_preview(
+            [ManualPriceChange(other_product.pk, Decimal("600.00"))],
+            self.superuser,
+        )
+        own_row = first_import.rows.get()
+        foreign_row = second_import.rows.get()
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(
+            f"/management-psk-zone/app/priceimport/{first_import.pk}/skip-selected/",
+            {"row_ids": [str(own_row.pk), str(foreign_row.pk)]},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        own_row.refresh_from_db()
+        self.assertEqual(own_row.status, PriceImportRow.Status.MATCHED)
+
+    def test_ajax_single_skip_returns_json_instead_of_redirect(self):
+        from app.price_sync.services import ManualPriceChange, create_manual_preview
+
+        import_obj = create_manual_preview(
+            [ManualPriceChange(self.product.pk, Decimal("1250.00"))],
+            self.superuser,
+        )
+        row = import_obj.rows.get()
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(
+            reverse("admin:app_priceimport_skip", args=[import_obj.pk, row.pk]),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["removed_ids"], [row.pk])
+        self.assertEqual(response.json()["summary"]["changed"], 0)
+
+    def test_ajax_skip_exposes_draft_to_ready_transition(self):
+        from app.price_sync.services import ManualPriceChange, create_manual_preview
+
+        import_obj = create_manual_preview(
+            [ManualPriceChange(self.product.pk, Decimal("2000.00"))],
+            self.superuser,
+        )
+        self.assertEqual(import_obj.status, PriceImport.Status.DRAFT)
+        row = import_obj.rows.get()
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(
+            reverse("admin:app_priceimport_skip", args=[import_obj.pk, row.pk]),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], PriceImport.Status.READY)
+        self.assertEqual(response.json()["status_display"], "Готов к применению")
+        self.assertEqual(response.json()["summary"]["anomalies"], 0)
+
+    def test_preview_renders_bulk_remove_controls_and_ajax_script(self):
+        from app.price_sync.services import ManualPriceChange, create_manual_preview
+
+        import_obj = create_manual_preview(
+            [ManualPriceChange(self.product.pk, Decimal("1250.00"))],
+            self.superuser,
+        )
+        row = import_obj.rows.get()
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(
+            reverse("admin:app_priceimport_preview", args=[import_obj.pk])
+        )
+
+        self.assertContains(response, "data-price-bulk-form")
+        self.assertContains(response, "Убрать выбранные из обновления")
+        self.assertContains(response, 'name="row_ids"')
+        self.assertContains(response, f'value="{row.pk}"')
+        self.assertContains(response, "app/js/price_import_admin.js")
+        self.assertContains(response, "data-price-import-status")
+        self.assertContains(response, "data-price-apply-action")
+        self.assertContains(
+            response,
+            reverse("admin:app_priceimport_skip_selected", args=[import_obj.pk]),
+        )
+
     def test_apply_action_is_above_table_and_price_direction_is_visible(self):
         from app.price_sync.services import ManualPriceChange, create_manual_preview
 
